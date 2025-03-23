@@ -93,22 +93,57 @@ void ConnectScreenServer::handleReadyRead()
     
     while (clientSocket->canReadLine()) {
         QByteArray line = clientSocket->readLine();
-        QString ipAddress = QString::fromUtf8(line).trimmed();
-        
-        qInfo() << "Received IP address from client:" << ipAddress;
+        QString request = QString::fromUtf8(line).trimmed();
+        qInfo() << "收到 ConnectScreen 请求:" << request;
+        QString ipAddress = request;
         emit ipAddressReceived(ipAddress);
 
         if (m_app && m_engine) {
+            for(const auto& computer : ComputerManager::getComputerManagerInstance()->getComputers()) {
+                qDebug() << "列出已配对计算机 " << computer->name << ": " << computer->activeAddress.toString() << " uuid " << computer->uuid;
+            }
             auto launcher = new CliPair::Launcher(ipAddress, "1234", m_app);
+            
+            // 连接信号以处理配对过程和结果
+            connect(launcher, &CliPair::Launcher::searchingComputer, this, [ipAddress]() {
+                qInfo() << "正在搜索计算机:" << ipAddress;
+            });
+            
+            connect(launcher, &CliPair::Launcher::pairing, this, [](QString computerName, QString pin) {
+                qInfo() << "正在与" << computerName << "配对，PIN码:" << pin;
+            });
+            
+            connect(launcher, &CliPair::Launcher::success, this, [this, clientSocket, ipAddress, launcher]() {
+                qInfo() << "配对成功:" << ipAddress;
+                
+                // 配对成功后回复"OK"给客户端
+                clientSocket->write("OK\n");
+                clientSocket->flush();
+                
+                // 清理launcher对象
+                launcher->deleteLater();
+            });
+            
+            connect(launcher, &CliPair::Launcher::failed, this, [this, clientSocket, ipAddress, launcher](QString error) {
+                qWarning() << "配对失败:" << ipAddress << "错误:" << error;
+                
+                // 配对失败也回复"OK"给客户端，因为客户端只需要知道请求已处理
+                clientSocket->write("OK\n");
+                clientSocket->flush();
+                
+                // 清理launcher对象
+                launcher->deleteLater();
+            });
+            
             launcher->execute(ComputerManager::getComputerManagerInstance());
             m_engine->rootContext()->setContextProperty("launcher", launcher);
         } else {
-            qWarning() << "Cannot create launcher: app or engine not set";
+            qWarning() << "无法创建launcher: app或engine未设置";
+            
+            // 回复"OK"给客户端
+            clientSocket->write("OK\n");
+            clientSocket->flush();
         }
-        
-        // 回复"OK"给客户端
-        clientSocket->write("OK\n");
-        clientSocket->flush();
     }
 }
 

@@ -47,4 +47,5 @@ def test_connect_server(ip_to_send="192.168.1.100"):
         return False
 
 if __name__ == "__main__":
+    # 65A72D07-AD95-C820-9603-350BE33FE695
     test_connect_server('127.0.0.1')
