@@ -201,19 +201,27 @@ Flickable {
                     }
                     spacing: 10
                     
-                    Label {
+                    TextEdit {
                         text: timestamp
                         font.pointSize: 10
                         color: "#666666"
                         Layout.preferredWidth: 80
+                        readOnly: true
+                        selectByMouse: true
+                        selectedTextColor: "white"
+                        selectionColor: "#007acc"
                     }
                     
-                    Label {
+                    TextEdit {
                         id: logText
                         text: model.text
                         wrapMode: Text.WordWrap
                         Layout.fillWidth: true
                         color: "#333333"
+                        readOnly: true
+                        selectByMouse: true
+                        selectedTextColor: "white"
+                        selectionColor: "#007acc"
                     }
                 }
             }
