@@ -43,10 +43,30 @@ CenteredGridView {
         if (currentIndex == -1 && SdlGamepadKeyNavigation.getConnectedGamepads() > 0) {
             currentIndex = 0
         }
-
+        
+        // 创建LogView并等待其准备好
         var component = Qt.createComponent("LogView.qml")
-        var logView = component.createObject(stackView, {})
-        stackView.push(logView)
+        
+        function finishCreation() {
+            if (component.status === Component.Ready) {
+                var logView = component.createObject(stackView)
+                if (logView) {
+                    stackView.push(logView)
+                } else {
+                    console.error("无法创建LogView对象:", component.errorString())
+                }
+            } else if (component.status === Component.Error) {
+                console.error("组件加载错误:", component.errorString())
+            }
+        }
+        
+        if (component.status === Component.Ready) {
+            finishCreation()
+        } else if (component.status === Component.Loading) {
+            component.statusChanged.connect(finishCreation)
+        } else {
+            console.error("组件创建失败:", component.errorString())
+        }
     }
 
     StackView.onDeactivating: {

@@ -165,7 +165,7 @@ Flickable {
             border.color: "#dddddd"
             border.width: 1
             
-            Label {
+            TextEdit {
                 anchors {
                     left: parent.left
                     right: parent.right
@@ -174,8 +174,12 @@ Flickable {
                 }
                 text: qsTr("文件路径: ") + logFilePath
                 font.pointSize: 9
-                elide: Text.ElideMiddle
+                wrapMode: Text.Wrap
                 color: "#666666"
+                readOnly: true
+                selectByMouse: true
+                selectedTextColor: "white"
+                selectionColor: "#007acc"
             }
         }
 
