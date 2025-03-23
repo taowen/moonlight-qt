@@ -48,7 +48,6 @@ Flickable {
         // 清除现有日志
         clearLogs()
         
-        // 添加新日志（从旧到新）
         for (var i = 0; i < logLines.length; i++) {
             addLogEntry(logLines[i])
         }
@@ -66,8 +65,8 @@ Flickable {
             text = match[2]
         }
         
-        // 添加新日志条目到数组
-        logEntries.push({
+        // 添加新日志条目到数组（添加到开头）
+        logEntries.unshift({
             text: text,
             timestamp: timestamp,
             fullText: message
@@ -75,11 +74,11 @@ Flickable {
         
         // 限制日志条目数量
         if (logEntries.length > maxLogEntries) {
-            logEntries.shift()
+            logEntries.pop()
         }
         
-        // 更新模型
-        logModel.append({
+        // 更新模型（添加到开头）
+        logModel.insert(0, {
             text: text,
             timestamp: timestamp,
             fullText: message
