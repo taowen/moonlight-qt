@@ -4,6 +4,7 @@
 #include <QObject>
 #include <QStringList>
 #include <QDir>
+#include <QFileSystemWatcher>
 
 class LogManager : public QObject
 {
@@ -20,12 +21,15 @@ public:
     
 signals:
     void latestLogPathChanged();
+    void logFileChanged();
     
 private:
     QString m_LogDir;
     QString m_LatestLogPath;
+    QFileSystemWatcher *m_fileWatcher;
     
     void findLatestLogFile();
+    void onFileChanged(const QString &path);
 };
 
 #endif // LOGMANAGER_H 

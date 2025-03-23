@@ -5,11 +5,20 @@
 #include <QTextStream>
 #include <QDateTime>
 #include <QRegularExpression>
+#include <QFileSystemWatcher>
 
 LogManager::LogManager(QObject *parent) : QObject(parent)
 {
     // 获取日志目录
     m_LogDir = Path::getLogDir();
+    
+    // 创建文件系统监视器
+    m_fileWatcher = new QFileSystemWatcher(this);
+    
+    // 连接文件变化信号
+    connect(m_fileWatcher, &QFileSystemWatcher::fileChanged, 
+            this, &LogManager::onFileChanged);
+    
     findLatestLogFile();
 }
 
@@ -72,7 +81,29 @@ void LogManager::findLatestLogFile()
 {
     QStringList logFiles = getLogFilesList();
     if (!logFiles.isEmpty()) {
+        // 如果当前已有监视的文件，先移除
+        if (!m_LatestLogPath.isEmpty() && m_fileWatcher->files().contains(m_LatestLogPath)) {
+            m_fileWatcher->removePath(m_LatestLogPath);
+        }
+        
         m_LatestLogPath = logFiles.first();
+        
+        // 添加新文件到监视器
+        m_fileWatcher->addPath(m_LatestLogPath);
+        
         emit latestLogPathChanged();
+    }
+}
+
+void LogManager::onFileChanged(const QString &path)
+{
+    // 文件变化时发出信号
+    if (path == m_LatestLogPath) {
+        emit logFileChanged();
+        
+        // 某些系统在文件被修改后可能会删除监视，需要重新添加
+        if (!m_fileWatcher->files().contains(path)) {
+            m_fileWatcher->addPath(path);
+        }
     }
 }

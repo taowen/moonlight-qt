@@ -82,15 +82,17 @@ void ConnectionScreenServer::handleReadyRead()
         return;
     }
     
-    QByteArray data = clientSocket->readAll();
-    QString ipAddress = QString::fromUtf8(data).trimmed();
-    
-    qInfo() << "Received IP address from client:" << ipAddress;
-    emit ipAddressReceived(ipAddress);
-    
-    // 回复"OK"给客户端
-    clientSocket->write("OK");
-    clientSocket->flush();
+    while (clientSocket->canReadLine()) {
+        QByteArray line = clientSocket->readLine();
+        QString ipAddress = QString::fromUtf8(line).trimmed();
+        
+        qInfo() << "Received IP address from client:" << ipAddress;
+        emit ipAddressReceived(ipAddress);
+        
+        // 回复"OK"给客户端
+        clientSocket->write("OK\n");
+        clientSocket->flush();
+    }
 }
 
 void ConnectionScreenServer::handleDisconnected()

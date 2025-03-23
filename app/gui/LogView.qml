@@ -17,15 +17,16 @@ Flickable {
     property var logEntries: []
     property int maxLogEntries: 1000
     property string logFilePath: LogManager.latestLogPath
-    property bool autoRefresh: true
-    property int refreshInterval: 2000 // 2秒刷新一次
     
-    Timer {
-        id: refreshTimer
-        interval: refreshInterval
-        running: true
-        repeat: true
-        onTriggered: {
+    // 监听 LogManager 的文件变化信号
+    Connections {
+        target: LogManager
+        function onLogFileChanged() {
+            readLogFile()
+        }
+        
+        function onLatestLogPathChanged() {
+            logFilePath = LogManager.latestLogPath
             readLogFile()
         }
     }
