@@ -3,6 +3,7 @@ import QtQuick.Controls 2.2
 import QtQuick.Layouts 1.2
 import QtQuick.Window 2.2
 import Qt.labs.platform 1.1
+import LogManager 1.0
 
 Flickable {
     id: logPage
@@ -22,7 +23,7 @@ Flickable {
 
     property var logEntries: []
     property int maxLogEntries: 1000
-    property string logFilePath: ""
+    property string logFilePath: LogManager.latestLogPath
     property bool autoRefresh: true
     property int refreshInterval: 2000 // 2秒刷新一次
     
@@ -36,57 +37,53 @@ Flickable {
         }
     }
     
-    function getLogDir() {
-        // 获取日志目录路径，这应该与 Path::getLogDir() 返回的路径相匹配
-        // 这里使用一个简化的实现，实际应用中可能需要从 C++ 导出此函数
-        var logDir
-        if (Qt.platform.os === "windows") {
-            logDir = StandardPaths.writableLocation(StandardPaths.AppLocalDataLocation) + "/Moonlight Game Streaming Project/Moonlight"
-        } else if (Qt.platform.os === "osx") {
-            logDir = StandardPaths.writableLocation(StandardPaths.AppLocalDataLocation) + "/Logs"
-        } else {
-            // Linux 和其他平台
-            logDir = StandardPaths.writableLocation(StandardPaths.AppLocalDataLocation) + "/logs"
-        }
-        return logDir
-    }
-    
-    function findLatestLogFile() {
-        // 这个函数需要在 C++ 中实现，因为 QML 没有直接的文件系统遍历功能
-        // 这里我们假设日志文件路径已经通过某种方式设置好了
-        // 实际实现中，你需要从 C++ 导出一个函数来获取最新的日志文件
-        console.log("需要在 C++ 中实现查找最新日志文件的功能")
-        return ""
-    }
-    
     function readLogFile() {
-        // 这个函数需要在 C++ 中实现，因为 QML 对文件读取的支持有限
-        // 实际实现中，你需要从 C++ 导出一个函数来读取日志文件内容
-        console.log("需要在 C++ 中实现读取日志文件的功能")
+        if (logFilePath === "") {
+            return
+        }
         
-        // 模拟从文件读取日志
-        // 在实际实现中，这部分代码会被替换为真正的文件读取逻辑
-        var currentTime = new Date().toLocaleTimeString()
-        addLogEntry("从日志文件读取的示例日志 - " + currentTime)
+        // 使用 LogManager 读取日志文件
+        var logLines = LogManager.readLogFile(logFilePath, maxLogEntries)
+        
+        // 清除现有日志
+        clearLogs()
+        
+        // 添加新日志（从旧到新）
+        for (var i = 0; i < logLines.length; i++) {
+            addLogEntry(logLines[i])
+        }
     }
 
     function addLogEntry(message) {
-        // 添加新日志条目到数组开头
-        logEntries.unshift({
-            text: message,
-            timestamp: new Date().toLocaleTimeString()
+        // 解析日志行，提取时间戳（如果有）
+        var timestamp = ""
+        var text = message
+        
+        // 尝试匹配时间戳格式，例如 "12:34:56 - ..."
+        var match = message.match(/^(\d{2}:\d{2}:\d{2})(.*)/)
+        if (match) {
+            timestamp = match[1]
+            text = match[2]
+        }
+        
+        // 添加新日志条目到数组
+        logEntries.push({
+            text: text,
+            timestamp: timestamp,
+            fullText: message
         })
         
         // 限制日志条目数量
         if (logEntries.length > maxLogEntries) {
-            logEntries.pop()
+            logEntries.shift()
         }
         
         // 更新模型
-        logModel.clear()
-        for (var i = 0; i < logEntries.length; i++) {
-            logModel.append(logEntries[i])
-        }
+        logModel.append({
+            text: text,
+            timestamp: timestamp,
+            fullText: message
+        })
     }
 
     function clearLogs() {
@@ -132,6 +129,29 @@ Flickable {
                 Button {
                     text: qsTr("刷新")
                     onClicked: readLogFile()
+                }
+                
+                ComboBox {
+                    id: logFilesCombo
+                    model: LogManager.getLogFilesList()
+                    textRole: "fileName"
+                    valueRole: "filePath"
+                    
+                    // 显示文件名而不是完整路径
+                    displayText: {
+                        var path = currentText
+                        return path.substring(path.lastIndexOf('/') + 1)
+                    }
+                    
+                    onCurrentTextChanged: {
+                        logFilePath = currentText
+                        readLogFile()
+                    }
+                    
+                    Component.onCompleted: {
+                        // 选择最新的日志文件
+                        currentIndex = 0
+                    }
                 }
             }
         }
@@ -193,7 +213,6 @@ Flickable {
 
     // 组件完成后初始化
     Component.onCompleted: {
-        addLogEntry("应用程序启动")
         readLogFile()
     }
 } 

@@ -47,15 +47,12 @@
 #include "streaming/session.h"
 #include "settings/streamingpreferences.h"
 #include "gui/sdlgamepadkeynavigation.h"
+#include "backend/logmanager.h"
 
+// 始终打印日志到文件
+#define LOG_TO_FILE
 #if defined(Q_OS_WIN32)
 #define IS_UNSPECIFIED_HANDLE(x) ((x) == INVALID_HANDLE_VALUE || (x) == NULL)
-
-// Log to file or console dynamically for Windows builds
-#define LOG_TO_FILE
-#elif !defined(QT_DEBUG) && defined(Q_OS_DARWIN)
-// Log to file for release Mac builds
-#define LOG_TO_FILE
 #else
 // Log to console for debug Mac builds
 #endif
@@ -593,12 +590,20 @@ int main(int argc, char *argv[])
         if (AttachConsole(ATTACH_PARENT_PROCESS)) {
             // If we didn't have an old stdout/stderr handle, use the new CONOUT$ handle
             if (IS_UNSPECIFIED_HANDLE(oldConOut)) {
-                freopen("CONOUT$", "w", stdout);
-                setvbuf(stdout, NULL, _IONBF, 0);
-            }
-            if (IS_UNSPECIFIED_HANDLE(oldConErr)) {
-                freopen("CONOUT$", "w", stderr);
-                setvbuf(stderr, NULL, _IONBF, 0);
+                FILE* newStdout;
+                FILE* newStderr;
+                if (freopen_s(&newStdout, "CONOUT$", "w", stdout) == 0 &&
+                    freopen_s(&newStderr, "CONOUT$", "w", stderr) == 0) {
+                    // If we didn't have an old stdout/stderr handle, use the new CONOUT$ handle
+                    if (IS_UNSPECIFIED_HANDLE(oldConOut)) {
+                        freopen("CONOUT$", "w", stdout);
+                        setvbuf(stdout, NULL, _IONBF, 0);
+                    }
+                    if (IS_UNSPECIFIED_HANDLE(oldConErr)) {
+                        freopen("CONOUT$", "w", stderr);
+                        setvbuf(stderr, NULL, _IONBF, 0);
+                    }
+                }
             }
         }
 #endif
@@ -708,6 +713,11 @@ int main(int argc, char *argv[])
                                                    [](QQmlEngine* qmlEngine, QJSEngine*) -> QObject* {
                                                        return StreamingPreferences::get(qmlEngine);
                                                    });
+    qmlRegisterSingletonType<LogManager>("LogManager", 1, 0,
+                                         "LogManager",
+                                         [](QQmlEngine*, QJSEngine*) -> QObject* {
+                                             return new LogManager();
+                                         });
 
     // Create the identity manager on the main thread
     IdentityManager::get();

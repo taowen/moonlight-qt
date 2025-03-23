@@ -168,6 +168,7 @@ macx {
 SOURCES += \
     backend/nvaddress.cpp \
     backend/nvapp.cpp \
+    backend/logmanager.cpp \
     cli/pair.cpp \
     main.cpp \
     backend/computerseeker.cpp \
@@ -208,6 +209,7 @@ SOURCES += \
 HEADERS += \
     backend/nvaddress.h \
     backend/nvapp.h \
+    backend/logmanager.h \
     cli/pair.h \
     settings/compatfetcher.h \
     settings/mappingfetcher.h \
