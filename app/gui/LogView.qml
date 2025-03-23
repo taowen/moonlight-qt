@@ -2,6 +2,7 @@ import QtQuick 2.9
 import QtQuick.Controls 2.2
 import QtQuick.Layouts 1.2
 import QtQuick.Window 2.2
+import Qt.labs.platform 1.1
 
 Flickable {
     id: logPage
@@ -20,7 +21,54 @@ Flickable {
     }
 
     property var logEntries: []
-    property int maxLogEntries: 100
+    property int maxLogEntries: 1000
+    property string logFilePath: ""
+    property bool autoRefresh: true
+    property int refreshInterval: 2000 // 2秒刷新一次
+    
+    Timer {
+        id: refreshTimer
+        interval: refreshInterval
+        running: autoRefresh
+        repeat: true
+        onTriggered: {
+            readLogFile()
+        }
+    }
+    
+    function getLogDir() {
+        // 获取日志目录路径，这应该与 Path::getLogDir() 返回的路径相匹配
+        // 这里使用一个简化的实现，实际应用中可能需要从 C++ 导出此函数
+        var logDir
+        if (Qt.platform.os === "windows") {
+            logDir = StandardPaths.writableLocation(StandardPaths.AppLocalDataLocation) + "/Moonlight Game Streaming Project/Moonlight"
+        } else if (Qt.platform.os === "osx") {
+            logDir = StandardPaths.writableLocation(StandardPaths.AppLocalDataLocation) + "/Logs"
+        } else {
+            // Linux 和其他平台
+            logDir = StandardPaths.writableLocation(StandardPaths.AppLocalDataLocation) + "/logs"
+        }
+        return logDir
+    }
+    
+    function findLatestLogFile() {
+        // 这个函数需要在 C++ 中实现，因为 QML 没有直接的文件系统遍历功能
+        // 这里我们假设日志文件路径已经通过某种方式设置好了
+        // 实际实现中，你需要从 C++ 导出一个函数来获取最新的日志文件
+        console.log("需要在 C++ 中实现查找最新日志文件的功能")
+        return ""
+    }
+    
+    function readLogFile() {
+        // 这个函数需要在 C++ 中实现，因为 QML 对文件读取的支持有限
+        // 实际实现中，你需要从 C++ 导出一个函数来读取日志文件内容
+        console.log("需要在 C++ 中实现读取日志文件的功能")
+        
+        // 模拟从文件读取日志
+        // 在实际实现中，这部分代码会被替换为真正的文件读取逻辑
+        var currentTime = new Date().toLocaleTimeString()
+        addLogEntry("从日志文件读取的示例日志 - " + currentTime)
+    }
 
     function addLogEntry(message) {
         // 添加新日志条目到数组开头
@@ -70,9 +118,20 @@ Flickable {
                     Layout.fillWidth: true
                 }
 
+                Switch {
+                    text: qsTr("自动刷新")
+                    checked: autoRefresh
+                    onCheckedChanged: {
+                        autoRefresh = checked
+                        if (autoRefresh) {
+                            readLogFile()
+                        }
+                    }
+                }
+
                 Button {
-                    text: qsTr("清除")
-                    onClicked: clearLogs()
+                    text: qsTr("刷新")
+                    onClicked: readLogFile()
                 }
             }
         }
@@ -111,6 +170,7 @@ Flickable {
                         text: model.text
                         wrapMode: Text.WordWrap
                         Layout.fillWidth: true
+                        color: "#333333"
                     }
                 }
             }
@@ -131,8 +191,9 @@ Flickable {
         }
     }
 
-    // 示例：添加一些初始日志
+    // 组件完成后初始化
     Component.onCompleted: {
         addLogEntry("应用程序启动")
+        readLogFile()
     }
 } 
