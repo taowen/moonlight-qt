@@ -140,7 +140,7 @@ void ConnectScreenServer::handleReadyRead()
             clientSocket->flush();
             
             // 列出已配对计算机的所有应用程序
-            launchDesktop(uuid);
+            launchDesktop(ipAddress, uuid);
         } else {
             // 使用从JSON中获取的PIN码，如果为空则使用默认值"1234"
             QString pinToUse = pin.isEmpty() ? "1234" : pin;
@@ -163,7 +163,7 @@ void ConnectScreenServer::handleReadyRead()
                 clientSocket->flush();
                 
                 // 列出新配对计算机的所有应用程序
-                launchDesktop(uuid);
+                launchDesktop(ipAddress, uuid);
 
                 // 清理launcher对象
                 launcher->deleteLater();
@@ -210,27 +210,7 @@ void ConnectScreenServer::handleError(QAbstractSocket::SocketError socketError)
 }
 
 // 添加新方法用于列出计算机的应用程序
-void ConnectScreenServer::launchDesktop(const QString& uuid)
+void ConnectScreenServer::launchDesktop(const QString& ip, const QString& uuid)
 {
-    for(const auto& computer : ComputerManager::getComputerManagerInstance()->getComputers()) {
-        if (computer->uuid == uuid) {
-            qInfo() << "计算机" << computer->name << "(" << uuid << ")的应用程序列表:";
-            
-            if (computer->appList.isEmpty()) {
-                qInfo() << "  没有可用的应用程序";
-            } else {
-                for (const NvApp& app : computer->appList) {
-                    qInfo() << "  应用ID:" << app.id << "名称:" << app.name 
-                            << "隐藏:" << (app.hidden ? "是" : "否")
-                            << "直接启动:" << (app.directLaunch ? "是" : "否")
-                            << "AppCollector游戏:" << (app.isAppCollectorGame ? "是" : "否");
-                    if (app.name == "Desktop") {
-                        new Session(session, app);
-                    }
-                }
-            }
-            
-            break;
-        }
-    }
+    
 }

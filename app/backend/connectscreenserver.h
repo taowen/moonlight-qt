@@ -42,5 +42,5 @@ private:
     QGuiApplication* m_app = nullptr;
     QQmlApplicationEngine* m_engine = nullptr;
 
-    void launchDesktop(const QString& uuid);
+    void launchDesktop(const QString& ipAddress, const QString& uuid);
 };
