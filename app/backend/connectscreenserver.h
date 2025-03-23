@@ -6,8 +6,6 @@
 #include <QGuiApplication>
 #include <QQmlApplicationEngine>
 
-#include <qmdnsengine/server.h>
-
 class ConnectScreenServer : public QObject
 {
     Q_OBJECT
