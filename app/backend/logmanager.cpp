@@ -75,4 +75,4 @@ void LogManager::findLatestLogFile()
         m_LatestLogPath = logFiles.first();
         emit latestLogPathChanged();
     }
-} 
+}
