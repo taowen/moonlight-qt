@@ -136,7 +136,8 @@ public:
     Q_PROPERTY(bool swapFaceButtons MEMBER swapFaceButtons NOTIFY swapFaceButtonsChanged)
     Q_PROPERTY(bool keepAwake MEMBER keepAwake NOTIFY keepAwakeChanged)
     Q_PROPERTY(CaptureSysKeysMode captureSysKeysMode MEMBER captureSysKeysMode NOTIFY captureSysKeysModeChanged)
-    Q_PROPERTY(Language language MEMBER language NOTIFY languageChanged);
+    Q_PROPERTY(Language language MEMBER language NOTIFY languageChanged)
+    Q_PROPERTY(int connectPort READ connectPort WRITE setConnectPort NOTIFY connectPortChanged)
 
     Q_INVOKABLE bool retranslate();
 
@@ -175,6 +176,10 @@ public:
     UIDisplayMode uiDisplayMode;
     Language language;
     CaptureSysKeysMode captureSysKeysMode;
+    int m_ConnectPort;
+
+    int connectPort() const { return m_ConnectPort; }
+    void setConnectPort(int value) { m_ConnectPort = value; emit connectPortChanged(); }
 
 signals:
     void displayModeChanged();
@@ -208,6 +213,7 @@ signals:
     void captureSysKeysModeChanged();
     void keepAwakeChanged();
     void languageChanged();
+    void connectPortChanged();
 
 private:
     explicit StreamingPreferences(QQmlEngine *qmlEngine);
