@@ -30,7 +30,7 @@ Flickable {
     Timer {
         id: refreshTimer
         interval: refreshInterval
-        running: autoRefresh
+        running: true
         repeat: true
         onTriggered: {
             readLogFile()
@@ -113,22 +113,6 @@ Flickable {
                     font.bold: true
                     color: "white"
                     Layout.fillWidth: true
-                }
-
-                Switch {
-                    text: qsTr("自动刷新")
-                    checked: autoRefresh
-                    onCheckedChanged: {
-                        autoRefresh = checked
-                        if (autoRefresh) {
-                            readLogFile()
-                        }
-                    }
-                }
-
-                Button {
-                    text: qsTr("刷新")
-                    onClicked: readLogFile()
                 }
             }
         }
