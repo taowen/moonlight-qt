@@ -41,4 +41,6 @@ private:
     // 添加成员变量
     QGuiApplication* m_app = nullptr;
     QQmlApplicationEngine* m_engine = nullptr;
+
+    void launchDesktop(const QString& uuid);
 };
