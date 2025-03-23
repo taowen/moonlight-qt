@@ -328,10 +328,6 @@ int main(int argc, char *argv[])
 #ifdef LOG_TO_FILE
     QDir tempDir(Path::getLogDir());
 
-#ifdef Q_OS_WIN32
-    // Only log to a file if the user didn't redirect stderr somewhere else
-    if (IS_UNSPECIFIED_HANDLE(oldConErr))
-#endif
     {
         s_LoggerFile = new QFile(tempDir.filePath(QString("Moonlight-%1.log").arg(QDateTime::currentSecsSinceEpoch())));
         if (s_LoggerFile->open(QIODevice::WriteOnly | QIODevice::Text)) {
