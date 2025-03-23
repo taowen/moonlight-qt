@@ -14,13 +14,6 @@ Flickable {
     contentWidth: logColumn.width
     contentHeight: logColumn.height
 
-    ScrollBar.vertical: ScrollBar {
-        anchors {
-            left: parent.right
-            leftMargin: -10
-        }
-    }
-
     property var logEntries: []
     property int maxLogEntries: 1000
     property string logFilePath: LogManager.latestLogPath
@@ -146,10 +139,29 @@ Flickable {
         ListView {
             id: logListView
             width: parent.width - parent.padding * 2
-            height: Math.min(contentHeight, logPage.height - 60)
+            height: logPage.height - 150
             clip: true
             model: ListModel {
                 id: logModel
+            }
+            
+            // 添加滚动条
+            ScrollBar.vertical: ScrollBar {
+                active: true
+                policy: ScrollBar.AsNeeded
+                width: 8
+                anchors.right: parent.right
+                anchors.rightMargin: 1
+                contentItem: Rectangle {
+                    implicitWidth: 8
+                    radius: width / 2
+                    color: "#007acc"
+                }
+                background: Rectangle {
+                    implicitWidth: 8
+                    radius: width / 2
+                    color: "#dddddd"
+                }
             }
             
             delegate: Rectangle {
