@@ -180,7 +180,7 @@ GlobalCommandLineParser::ParseResult GlobalCommandLineParser::parse(const QStrin
         // or --help is specified
         parser.handleHelpAndVersionOptions();
         parser.handleUnknownOptions();
-        return NormalStartRequested;
+        return ConnectScreenRequested;
     }
     else {
         // If users supply arguments that accept values prior to the "quit"
@@ -199,6 +199,8 @@ GlobalCommandLineParser::ParseResult GlobalCommandLineParser::parse(const QStrin
                 return PairRequested;
             } else if (action == "list") {
                 return ListRequested;
+            } else if (action == "connect-screen") {
+                return ConnectScreenRequested;
             }
         }
 

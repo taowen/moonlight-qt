@@ -734,6 +734,9 @@ int main(int argc, char *argv[])
     case GlobalCommandLineParser::NormalStartRequested:
         initialView = "qrc:/gui/PcView.qml";
         break;
+    case GlobalCommandLineParser::ConnectScreenRequested:
+        initialView = "qrc:/gui/ConnectScreenView.qml";
+        break;
     case GlobalCommandLineParser::StreamRequested:
         {
             initialView = "qrc:/gui/CliStartStreamSegue.qml";
