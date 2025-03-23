@@ -205,7 +205,7 @@ SOURCES += \
     streaming/video/overlaymanager.cpp \
     backend/systemproperties.cpp \
     wm.cpp \
-    backend/connectionscreenserver.cpp
+    backend/connectscreenserver.cpp
 
 HEADERS += \
     backend/nvaddress.h \
@@ -242,7 +242,7 @@ HEADERS += \
     gui/sdlgamepadkeynavigation.h \
     streaming/video/overlaymanager.h \
     backend/systemproperties.h \
-    backend/connectionscreenserver.h
+    backend/connectscreenserver.h
 
 # Platform-specific renderers and decoders
 ffmpeg {

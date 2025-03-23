@@ -2,9 +2,9 @@ import socket
 import time
 import sys
 
-def test_connection_server(ip_to_send="192.168.1.100"):
+def test_connect_server(ip_to_send="192.168.1.100"):
     """
-    测试 ConnectionScreenServer 的客户端脚本
+    测试 ConnectScreenServer 的客户端脚本
     
     参数:
         ip_to_send: 要发送给服务器的IP地址
@@ -47,4 +47,4 @@ def test_connection_server(ip_to_send="192.168.1.100"):
         return False
 
 if __name__ == "__main__":
-    test_connection_server('127.0.0.1')
+    test_connect_server('127.0.0.1')

@@ -1,36 +1,38 @@
-#include "connectionscreenserver.h"
+#include "connectscreenserver.h"
+#include "qqmlcontext.h"
 #include <QDebug>
+#include <cli/pair.h>
 
-ConnectionScreenServer::ConnectionScreenServer(QObject *parent)
+ConnectScreenServer::ConnectScreenServer(QObject *parent)
     : QObject(parent), m_server(new QTcpServer(this))
 {
-    connect(m_server, &QTcpServer::newConnection, this, &ConnectionScreenServer::handleNewConnection);
+    connect(m_server, &QTcpServer::newConnection, this, &ConnectScreenServer::handleNewConnection);
 }
 
-ConnectionScreenServer::~ConnectionScreenServer()
+ConnectScreenServer::~ConnectScreenServer()
 {
     stopServer();
 }
 
-bool ConnectionScreenServer::startServer(quint16 port)
+bool ConnectScreenServer::startServer(quint16 port)
 {
     if (m_server->isListening()) {
         stopServer();
     }
 
     if (m_server->listen(QHostAddress::Any, port)) {
-        qInfo() << "ConnectionScreenServer started on port" << port;
+        qInfo() << "ConnectScreenServer started on port" << port;
         emit serverStarted(port);
         return true;
     } else {
         QString errorMsg = m_server->errorString();
-        qWarning() << "Failed to start ConnectionScreenServer:" << errorMsg;
+        qWarning() << "Failed to start ConnectScreenServer:" << errorMsg;
         emit serverError(errorMsg);
         return false;
     }
 }
 
-void ConnectionScreenServer::stopServer()
+void ConnectScreenServer::stopServer()
 {
     if (m_server->isListening()) {
         m_server->close();
@@ -43,22 +45,28 @@ void ConnectionScreenServer::stopServer()
         qDeleteAll(m_clientConnections);
         m_clientConnections.clear();
         
-        qInfo() << "ConnectionScreenServer stopped";
+        qInfo() << "ConnectScreenServer stopped";
         emit serverStopped();
     }
 }
 
-bool ConnectionScreenServer::isListening() const
+bool ConnectScreenServer::isListening() const
 {
     return m_server->isListening();
 }
 
-quint16 ConnectionScreenServer::serverPort() const
+quint16 ConnectScreenServer::serverPort() const
 {
     return m_server->serverPort();
 }
 
-void ConnectionScreenServer::handleNewConnection()
+void ConnectScreenServer::setAppAndEngine(QGuiApplication* app, QQmlApplicationEngine* engine)
+{
+    m_app = app;
+    m_engine = engine;
+}
+
+void ConnectScreenServer::handleNewConnection()
 {
     QTcpSocket *clientSocket = m_server->nextPendingConnection();
     
@@ -68,14 +76,14 @@ void ConnectionScreenServer::handleNewConnection()
     
     m_clientConnections.append(clientSocket);
     
-    connect(clientSocket, &QTcpSocket::readyRead, this, &ConnectionScreenServer::handleReadyRead);
-    connect(clientSocket, &QTcpSocket::disconnected, this, &ConnectionScreenServer::handleDisconnected);
-    connect(clientSocket, &QTcpSocket::errorOccurred, this, &ConnectionScreenServer::handleError);
+    connect(clientSocket, &QTcpSocket::readyRead, this, &ConnectScreenServer::handleReadyRead);
+    connect(clientSocket, &QTcpSocket::disconnected, this, &ConnectScreenServer::handleDisconnected);
+    connect(clientSocket, &QTcpSocket::errorOccurred, this, &ConnectScreenServer::handleError);
     
     qInfo() << "New client connected:" << clientSocket->peerAddress().toString();
 }
 
-void ConnectionScreenServer::handleReadyRead()
+void ConnectScreenServer::handleReadyRead()
 {
     QTcpSocket *clientSocket = qobject_cast<QTcpSocket*>(sender());
     if (!clientSocket) {
@@ -88,6 +96,13 @@ void ConnectionScreenServer::handleReadyRead()
         
         qInfo() << "Received IP address from client:" << ipAddress;
         emit ipAddressReceived(ipAddress);
+
+        if (m_app && m_engine) {
+            auto launcher = new CliPair::Launcher(ipAddress, "1234", m_app);
+            m_engine->rootContext()->setContextProperty("launcher", launcher);
+        } else {
+            qWarning() << "Cannot create launcher: app or engine not set";
+        }
         
         // 回复"OK"给客户端
         clientSocket->write("OK\n");
@@ -95,7 +110,7 @@ void ConnectionScreenServer::handleReadyRead()
     }
 }
 
-void ConnectionScreenServer::handleDisconnected()
+void ConnectScreenServer::handleDisconnected()
 {
     QTcpSocket *clientSocket = qobject_cast<QTcpSocket*>(sender());
     if (!clientSocket) {
@@ -108,7 +123,7 @@ void ConnectionScreenServer::handleDisconnected()
     clientSocket->deleteLater();
 }
 
-void ConnectionScreenServer::handleError(QAbstractSocket::SocketError socketError)
+void ConnectScreenServer::handleError(QAbstractSocket::SocketError socketError)
 {
     QTcpSocket *clientSocket = qobject_cast<QTcpSocket*>(sender());
     if (!clientSocket) {
