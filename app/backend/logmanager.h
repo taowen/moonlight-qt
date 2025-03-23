@@ -14,6 +14,7 @@ class LogManager : public QObject
 
 public:
     explicit LogManager(QObject *parent = nullptr);
+    ~LogManager();
     
     // 获取单例实例
     static LogManager* getLogManagerInstance();

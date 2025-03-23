@@ -28,6 +28,10 @@ LogManager::LogManager(QObject *parent) : QObject(parent)
     s_instance = this;
 }
 
+LogManager::~LogManager() {
+    s_instance = nullptr;
+}
+
 LogManager* LogManager::getLogManagerInstance()
 {
     return s_instance;

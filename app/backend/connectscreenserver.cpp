@@ -25,6 +25,7 @@ bool ConnectScreenServer::startServer(quint16 port)
         stopServer();
     }
 
+    // m_MdnsServer.reset(new QMdnsEngine::Server());
     if (m_server->listen(QHostAddress::Any, port)) {
         qInfo() << "ConnectScreenServer started on port" << port;
         emit serverStarted(port);

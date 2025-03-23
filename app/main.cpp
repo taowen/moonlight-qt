@@ -75,8 +75,10 @@ static QFile* s_LoggerFile;
 static void notifyLogManagerOfNewLogEntry(QString& message)
 {
     // 通知 LogManager 有新的日志条目
-    QMetaObject::invokeMethod(LogManager::getLogManagerInstance(), "onNewLogEntry", 
-                             Qt::QueuedConnection, Q_ARG(QString, message));
+    if(LogManager::getLogManagerInstance() != nullptr) {
+        QMetaObject::invokeMethod(LogManager::getLogManagerInstance(), "onNewLogEntry",
+                                  Qt::QueuedConnection, Q_ARG(QString, message));
+    }
 }
 
 void logToLoggerStream(QString& message)
