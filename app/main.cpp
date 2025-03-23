@@ -761,11 +761,11 @@ int main(int argc, char *argv[])
         {
             initialView = "qrc:/gui/ConnectScreenView.qml";
             // Create ConnectScreenServer instance and set as context property
-            auto connectionServer = new ConnectScreenServer(&app);
-            connectionServer->setAppAndEngine(&app, &engine);
+            auto connectScreenServer = new ConnectScreenServer(&app);
+            connectScreenServer->setAppAndEngine(&app, &engine);
             StreamingPreferences* preferences = StreamingPreferences::get();
-            connectionServer->startServer(preferences->connectPort());
-            engine.rootContext()->setContextProperty("connectionServer", connectionServer);
+            connectScreenServer->startServer(preferences->connectPort());
+            engine.rootContext()->setContextProperty("connectScreenServer", connectScreenServer);
         }
         break;
     case GlobalCommandLineParser::StreamRequested:

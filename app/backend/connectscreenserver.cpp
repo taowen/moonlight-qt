@@ -2,7 +2,9 @@
 #include "connectscreenserver.h"
 #include "qqmlcontext.h"
 #include <QDebug>
+#include <cli/commandlineparser.h>
 #include <cli/pair.h>
+#include <cli/startstream.h>
 #include <QJsonDocument>
 #include <QJsonObject>
 
@@ -124,8 +126,6 @@ void ConnectScreenServer::handleReadyRead()
             continue;
         }
         
-        emit ipAddressReceived(ipAddress);
-
         bool paired = false;
         for(const auto& computer : ComputerManager::getComputerManagerInstance()->getComputers()) {
             qDebug() << "列出已配对计算机 " << computer->name << ": " << computer->activeAddress.toString() << " uuid " << computer->uuid;
@@ -139,8 +139,12 @@ void ConnectScreenServer::handleReadyRead()
             clientSocket->write("OK\n");
             clientSocket->flush();
             
+            StreamingPreferences* preferences = StreamingPreferences::get();
+            auto launcher   = new CliStartStream::Launcher(ipAddress, "Desktop", preferences, m_app);
+            m_engine->rootContext()->setContextProperty("launcher", launcher);
+            
             // 列出已配对计算机的所有应用程序
-            launchDesktop(ipAddress, uuid);
+            emit launchDesktop(ipAddress, uuid);
         } else {
             // 使用从JSON中获取的PIN码，如果为空则使用默认值"1234"
             QString pinToUse = pin.isEmpty() ? "1234" : pin;
@@ -162,8 +166,11 @@ void ConnectScreenServer::handleReadyRead()
                 clientSocket->write("OK\n");
                 clientSocket->flush();
                 
-                // 列出新配对计算机的所有应用程序
-                launchDesktop(ipAddress, uuid);
+                StreamingPreferences* preferences = StreamingPreferences::get();
+                auto launcher   = new CliStartStream::Launcher(ipAddress, "Desktop", preferences, m_app);
+                m_engine->rootContext()->setContextProperty("launcher", launcher);
+                
+                emit launchDesktop(ipAddress, uuid);
 
                 // 清理launcher对象
                 launcher->deleteLater();
@@ -207,10 +214,4 @@ void ConnectScreenServer::handleError(QAbstractSocket::SocketError socketError)
     }
     
     qWarning() << "Socket error:" << socketError << clientSocket->errorString();
-}
-
-// 添加新方法用于列出计算机的应用程序
-void ConnectScreenServer::launchDesktop(const QString& ip, const QString& uuid)
-{
-    
 }

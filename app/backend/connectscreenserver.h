@@ -23,7 +23,7 @@ public:
     void setAppAndEngine(QGuiApplication* app, QQmlApplicationEngine* engine);
 
 signals:
-    void ipAddressReceived(const QString &ipAddress);
+    void launchDesktop(const QString& ipAddress, const QString& uuid);
     void serverStarted(quint16 port);
     void serverStopped();
     void serverError(const QString &errorMessage);
@@ -41,6 +41,4 @@ private:
     // 添加成员变量
     QGuiApplication* m_app = nullptr;
     QQmlApplicationEngine* m_engine = nullptr;
-
-    void launchDesktop(const QString& ipAddress, const QString& uuid);
 };
