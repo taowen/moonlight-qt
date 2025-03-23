@@ -287,7 +287,7 @@ ApplicationWindow {
 
             NavigableToolButton {
                 id: addPcButton
-                visible: qmltypeof(stackView.currentItem, "PcView")
+                visible: qmltypeof(stackView.currentItem, "PcView") || qmltypeof(stackView.currentItem, "ConnectScreenView")
 
                 iconSource:  "qrc:/res/ic_add_to_queue_white_48px.svg"
 

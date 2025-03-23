@@ -43,6 +43,10 @@ CenteredGridView {
         if (currentIndex == -1 && SdlGamepadKeyNavigation.getConnectedGamepads() > 0) {
             currentIndex = 0
         }
+
+        var component = Qt.createComponent("LogView.qml")
+        var logView = component.createObject(stackView, {})
+        stackView.push(logView)
     }
 
     StackView.onDeactivating: {
