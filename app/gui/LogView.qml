@@ -29,6 +29,10 @@ Flickable {
             logFilePath = LogManager.latestLogPath
             readLogFile()
         }
+        
+        function onLogContentChanged() {
+            readLogFile()
+        }
     }
     
     function readLogFile() {

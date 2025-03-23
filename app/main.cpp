@@ -72,6 +72,13 @@ static bool s_LogLimitReached = false;
 static QFile* s_LoggerFile;
 #endif
 
+static void notifyLogManagerOfNewLogEntry(QString& message)
+{
+    // 通知 LogManager 有新的日志条目
+    QMetaObject::invokeMethod(LogManager::getLogManagerInstance(), "onNewLogEntry", 
+                             Qt::QueuedConnection, Q_ARG(QString, message));
+}
+
 void logToLoggerStream(QString& message)
 {
     QMutexLocker lock(&s_LoggerLock);
@@ -113,6 +120,9 @@ void logToLoggerStream(QString& message)
 
     s_LoggerStream << message;
     s_LoggerStream.flush();
+    
+    // 通知 LogManager 有新的日志条目
+    notifyLogManagerOfNewLogEntry(message);
 }
 
 void sdlLogToDiskHandler(void*, int category, SDL_LogPriority priority, const char* message)
