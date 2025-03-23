@@ -130,29 +130,6 @@ Flickable {
                     text: qsTr("刷新")
                     onClicked: readLogFile()
                 }
-                
-                ComboBox {
-                    id: logFilesCombo
-                    model: LogManager.getLogFilesList()
-                    textRole: "fileName"
-                    valueRole: "filePath"
-                    
-                    // 显示文件名而不是完整路径
-                    displayText: {
-                        var path = currentText
-                        return path.substring(path.lastIndexOf('/') + 1)
-                    }
-                    
-                    onCurrentTextChanged: {
-                        logFilePath = currentText
-                        readLogFile()
-                    }
-                    
-                    Component.onCompleted: {
-                        // 选择最新的日志文件
-                        currentIndex = 0
-                    }
-                }
             }
         }
 
