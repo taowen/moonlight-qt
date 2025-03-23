@@ -116,54 +116,38 @@ void ConnectScreenServer::handleReadyRead()
         }
         
         QJsonObject jsonObj = jsonDoc.object();
+        QString action = jsonObj["action"].toString();
         QString ipAddress = jsonObj["ip"].toString();
         QString uuid = jsonObj["uuid"].toString();
         QString pin = jsonObj["pin"].toString();
         
-        if (ipAddress.isEmpty()) {
-            qWarning() << "JSON请求缺少IP地址";
-            clientSocket->write("ERROR: Missing IP address\n");
+        // 处理 ping 操作
+        if (action == "ping") {
+            qInfo() << "收到 ping 请求";
+            clientSocket->write("PONG\n");
             clientSocket->flush();
             continue;
         }
         
-        bool paired = false;
-        for(const auto& computer : ComputerManager::getComputerManagerInstance()->getComputers()) {
-            qDebug() << "列出已配对计算机 " << computer->name << ": " << computer->activeAddress.toString() << " uuid " << computer->uuid;
-            if (computer->uuid == uuid) {
-                paired = true;
+        // 处理 connect 操作或默认操作（向后兼容）
+        if (action.isEmpty() || action == "connect") {
+            if (ipAddress.isEmpty()) {
+                qWarning() << "JSON请求缺少IP地址";
+                clientSocket->write("ERROR: Missing IP address\n");
+                clientSocket->flush();
+                continue;
             }
-        }
-
-        if (paired) {
-            qInfo() << "跳过配对";
-            clientSocket->write("OK\n");
-            clientSocket->flush();
             
-            StreamingPreferences* preferences = StreamingPreferences::get();
-            auto launcher   = new CliStartStream::Launcher(ipAddress, "Desktop", preferences, m_app);
-            m_engine->rootContext()->setContextProperty("launcher", launcher);
-            
-            // 列出已配对计算机的所有应用程序
-            emit launchDesktop(ipAddress, uuid);
-        } else {
-            // 使用从JSON中获取的PIN码，如果为空则使用默认值"1234"
-            QString pinToUse = pin.isEmpty() ? "1234" : pin;
-            auto launcher = new CliPair::Launcher(ipAddress, pinToUse, m_app);
+            bool paired = false;
+            for(const auto& computer : ComputerManager::getComputerManagerInstance()->getComputers()) {
+                qDebug() << "列出已配对计算机 " << computer->name << ": " << computer->activeAddress.toString() << " uuid " << computer->uuid;
+                if (computer->uuid == uuid) {
+                    paired = true;
+                }
+            }
 
-            // 连接信号以处理配对过程和结果
-            connect(launcher, &CliPair::Launcher::searchingComputer, this, [ipAddress]() {
-                qInfo() << "正在搜索计算机:" << ipAddress;
-            });
-
-            connect(launcher, &CliPair::Launcher::pairing, this, [](QString computerName, QString pin) {
-                qInfo() << "正在与" << computerName << "配对，PIN码:" << pin;
-            });
-
-            connect(launcher, &CliPair::Launcher::success, this, [this, clientSocket, ipAddress, uuid, launcher]() {
-                qInfo() << "配对成功:" << ipAddress;
-
-                // 配对成功后回复"OK"给客户端
+            if (paired) {
+                qInfo() << "跳过配对";
                 clientSocket->write("OK\n");
                 clientSocket->flush();
                 
@@ -171,25 +155,58 @@ void ConnectScreenServer::handleReadyRead()
                 auto launcher   = new CliStartStream::Launcher(ipAddress, "Desktop", preferences, m_app);
                 m_engine->rootContext()->setContextProperty("launcher", launcher);
                 
+                // 列出已配对计算机的所有应用程序
                 emit launchDesktop(ipAddress, uuid);
+            } else {
+                // 使用从JSON中获取的PIN码，如果为空则使用默认值"1234"
+                QString pinToUse = pin.isEmpty() ? "1234" : pin;
+                auto launcher = new CliPair::Launcher(ipAddress, pinToUse, m_app);
 
-                // 清理launcher对象
-                launcher->deleteLater();
-            });
+                // 连接信号以处理配对过程和结果
+                connect(launcher, &CliPair::Launcher::searchingComputer, this, [ipAddress]() {
+                    qInfo() << "正在搜索计算机:" << ipAddress;
+                });
 
-            connect(launcher, &CliPair::Launcher::failed, this, [this, clientSocket, ipAddress, launcher](QString error) {
-                qWarning() << "配对失败:" << ipAddress << "错误:" << error;
+                connect(launcher, &CliPair::Launcher::pairing, this, [](QString computerName, QString pin) {
+                    qInfo() << "正在与" << computerName << "配对，PIN码:" << pin;
+                });
 
-                // 配对失败也回复"OK"给客户端，因为客户端只需要知道请求已处理
-                clientSocket->write("OK\n");
-                clientSocket->flush();
+                connect(launcher, &CliPair::Launcher::success, this, [this, clientSocket, ipAddress, uuid, launcher]() {
+                    qInfo() << "配对成功:" << ipAddress;
 
-                // 清理launcher对象
-                launcher->deleteLater();
-            });
+                    // 配对成功后回复"OK"给客户端
+                    clientSocket->write("OK\n");
+                    clientSocket->flush();
+                    
+                    StreamingPreferences* preferences = StreamingPreferences::get();
+                    auto launcher   = new CliStartStream::Launcher(ipAddress, "Desktop", preferences, m_app);
+                    m_engine->rootContext()->setContextProperty("launcher", launcher);
+                    
+                    emit launchDesktop(ipAddress, uuid);
 
-            launcher->execute(ComputerManager::getComputerManagerInstance());
-            m_engine->rootContext()->setContextProperty("launcher", launcher);
+                    // 清理launcher对象
+                    launcher->deleteLater();
+                });
+
+                connect(launcher, &CliPair::Launcher::failed, this, [this, clientSocket, ipAddress, launcher](QString error) {
+                    qWarning() << "配对失败:" << ipAddress << "错误:" << error;
+
+                    // 配对失败也回复"OK"给客户端，因为客户端只需要知道请求已处理
+                    clientSocket->write("OK\n");
+                    clientSocket->flush();
+
+                    // 清理launcher对象
+                    launcher->deleteLater();
+                });
+
+                launcher->execute(ComputerManager::getComputerManagerInstance());
+                m_engine->rootContext()->setContextProperty("launcher", launcher);
+            }
+        } else {
+            // 未知操作
+            qWarning() << "未知的操作类型:" << action;
+            clientSocket->write("ERROR: Unknown action\n");
+            clientSocket->flush();
         }
     }
 }

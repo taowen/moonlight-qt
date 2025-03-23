@@ -18,7 +18,7 @@ Item {
         var segue = component.createObject(stackView, {
             "appName": appName,
             "session": session,
-            "quitAfter": true
+            "quitAfter": false
         })
         stackView.push(segue)
     }
@@ -73,7 +73,7 @@ Item {
         id: errorDialog
 
         onClosed: {
-            Qt.quit();
+            stackView.pop()
         }
     }
 

@@ -181,6 +181,7 @@ GlobalCommandLineParser::ParseResult GlobalCommandLineParser::parse(const QStrin
         parser.handleHelpAndVersionOptions();
         parser.handleUnknownOptions();
         return ConnectScreenRequested;
+        // return NormalStartRequested;
     }
     else {
         // If users supply arguments that accept values prior to the "quit"
