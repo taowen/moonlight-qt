@@ -156,6 +156,29 @@ Flickable {
             }
         }
 
+        // 添加显示当前日志文件路径的标签
+        Rectangle {
+            width: parent.width - parent.padding * 2
+            height: 30
+            color: "#f5f5f5"
+            radius: 3
+            border.color: "#dddddd"
+            border.width: 1
+            
+            Label {
+                anchors {
+                    left: parent.left
+                    right: parent.right
+                    verticalCenter: parent.verticalCenter
+                    margins: 8
+                }
+                text: qsTr("文件路径: ") + logFilePath
+                font.pointSize: 9
+                elide: Text.ElideMiddle
+                color: "#666666"
+            }
+        }
+
         ListView {
             id: logListView
             width: parent.width - parent.padding * 2
