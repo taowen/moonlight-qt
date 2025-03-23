@@ -222,6 +222,8 @@ public:
 
     virtual ~ComputerManager();
 
+    static ComputerManager* getComputerManagerInstance();
+
     Q_INVOKABLE void startPolling();
 
     Q_INVOKABLE void stopPollingAsync();
@@ -284,4 +286,6 @@ private:
     QMutex m_DelayedFlushMutex; // Lock ordering: Must never be acquired while holding NvComputer lock
     QWaitCondition m_DelayedFlushCondition;
     bool m_NeedsDelayedFlush;
+
+    static ComputerManager* s_instance;
 };

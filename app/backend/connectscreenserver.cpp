@@ -1,3 +1,4 @@
+#include "computermanager.h"
 #include "connectscreenserver.h"
 #include "qqmlcontext.h"
 #include <QDebug>
@@ -99,6 +100,7 @@ void ConnectScreenServer::handleReadyRead()
 
         if (m_app && m_engine) {
             auto launcher = new CliPair::Launcher(ipAddress, "1234", m_app);
+            launcher->execute(ComputerManager::getComputerManagerInstance());
             m_engine->rootContext()->setContextProperty("launcher", launcher);
         } else {
             qWarning() << "Cannot create launcher: app or engine not set";
