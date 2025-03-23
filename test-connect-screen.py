@@ -2,12 +2,12 @@ import socket
 import time
 import sys
 
-def test_connect_server(ip_to_send="192.168.1.100"):
+def test_connect_server(connect_screen_req):
     """
     测试 ConnectScreenServer 的客户端脚本
     
     参数:
-        ip_to_send: 要发送给服务器的IP地址
+        connect_screen_req: 要发送给服务器的 request
     """
     server_ip="127.0.0.1"
     server_port=42515
@@ -21,9 +21,9 @@ def test_connect_server(ip_to_send="192.168.1.100"):
         print("已成功连接到服务器")
         
         # 发送 IP 地址给服务器
-        message = f"{ip_to_send}\n"
+        message = f"{connect_screen_req}\n"
         client_socket.sendall(message.encode('utf-8'))
-        print(f"已发送 IP 地址: {ip_to_send}")
+        print(f"已发送 IP 地址: {connect_screen_req}")
         
         # 接收服务器响应
         response = client_socket.recv(1024).decode('utf-8').strip()
@@ -47,5 +47,4 @@ def test_connect_server(ip_to_send="192.168.1.100"):
         return False
 
 if __name__ == "__main__":
-    # 65A72D07-AD95-C820-9603-350BE33FE695
-    test_connect_server('127.0.0.1')
+    test_connect_server('{"ip":"127.0.0.1","uuid":"65A72D07-AD95-C820-9603-350BE33FE695","pin":"1234"}')

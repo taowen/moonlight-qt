@@ -3,6 +3,8 @@
 #include "qqmlcontext.h"
 #include <QDebug>
 #include <cli/pair.h>
+#include <QJsonDocument>
+#include <QJsonObject>
 
 ConnectScreenServer::ConnectScreenServer(QObject *parent)
     : QObject(parent), m_server(new QTcpServer(this))
@@ -95,14 +97,38 @@ void ConnectScreenServer::handleReadyRead()
         QByteArray line = clientSocket->readLine();
         QString request = QString::fromUtf8(line).trimmed();
         qInfo() << "收到 ConnectScreen 请求:" << request;
-        QString ipAddress = request;
+        
+        // 解析JSON请求
+        QJsonDocument jsonDoc = QJsonDocument::fromJson(request.toUtf8());
+        if (jsonDoc.isNull() || !jsonDoc.isObject()) {
+            qWarning() << "无效的JSON请求格式";
+            clientSocket->write("ERROR: Invalid JSON format\n");
+            clientSocket->flush();
+            continue;
+        }
+        
+        QJsonObject jsonObj = jsonDoc.object();
+        QString ipAddress = jsonObj["ip"].toString();
+        QString uuid = jsonObj["uuid"].toString();
+        QString pin = jsonObj["pin"].toString();
+        
+        if (ipAddress.isEmpty()) {
+            qWarning() << "JSON请求缺少IP地址";
+            clientSocket->write("ERROR: Missing IP address\n");
+            clientSocket->flush();
+            continue;
+        }
+        
         emit ipAddressReceived(ipAddress);
 
         if (m_app && m_engine) {
             for(const auto& computer : ComputerManager::getComputerManagerInstance()->getComputers()) {
                 qDebug() << "列出已配对计算机 " << computer->name << ": " << computer->activeAddress.toString() << " uuid " << computer->uuid;
             }
-            auto launcher = new CliPair::Launcher(ipAddress, "1234", m_app);
+            
+            // 使用从JSON中获取的PIN码，如果为空则使用默认值"1234"
+            QString pinToUse = pin.isEmpty() ? "1234" : pin;
+            auto launcher = new CliPair::Launcher(ipAddress, pinToUse, m_app);
             
             // 连接信号以处理配对过程和结果
             connect(launcher, &CliPair::Launcher::searchingComputer, this, [ipAddress]() {
