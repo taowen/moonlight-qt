@@ -92,6 +92,11 @@ void ConnectScreenServer::handleReadyRead()
     if (!clientSocket) {
         return;
     }
+    if (!m_app || !m_engine) {
+        clientSocket->write("ERROR: missing m_app or m_engine\n");
+        clientSocket->flush();
+        return;
+    }
     
     while (clientSocket->canReadLine()) {
         QByteArray line = clientSocket->readLine();
@@ -121,54 +126,54 @@ void ConnectScreenServer::handleReadyRead()
         
         emit ipAddressReceived(ipAddress);
 
-        if (m_app && m_engine) {
-            for(const auto& computer : ComputerManager::getComputerManagerInstance()->getComputers()) {
-                qDebug() << "列出已配对计算机 " << computer->name << ": " << computer->activeAddress.toString() << " uuid " << computer->uuid;
+        bool paired = false;
+        for(const auto& computer : ComputerManager::getComputerManagerInstance()->getComputers()) {
+            qDebug() << "列出已配对计算机 " << computer->name << ": " << computer->activeAddress.toString() << " uuid " << computer->uuid;
+            if (computer->uuid == uuid) {
+                paired = true;
             }
-            
+        }
+
+        if (paired) {
+            qInfo() << "跳过配对";
+        } else {
             // 使用从JSON中获取的PIN码，如果为空则使用默认值"1234"
             QString pinToUse = pin.isEmpty() ? "1234" : pin;
             auto launcher = new CliPair::Launcher(ipAddress, pinToUse, m_app);
-            
+
             // 连接信号以处理配对过程和结果
             connect(launcher, &CliPair::Launcher::searchingComputer, this, [ipAddress]() {
                 qInfo() << "正在搜索计算机:" << ipAddress;
             });
-            
+
             connect(launcher, &CliPair::Launcher::pairing, this, [](QString computerName, QString pin) {
                 qInfo() << "正在与" << computerName << "配对，PIN码:" << pin;
             });
-            
+
             connect(launcher, &CliPair::Launcher::success, this, [this, clientSocket, ipAddress, launcher]() {
                 qInfo() << "配对成功:" << ipAddress;
-                
+
                 // 配对成功后回复"OK"给客户端
                 clientSocket->write("OK\n");
                 clientSocket->flush();
-                
+
                 // 清理launcher对象
                 launcher->deleteLater();
             });
-            
+
             connect(launcher, &CliPair::Launcher::failed, this, [this, clientSocket, ipAddress, launcher](QString error) {
                 qWarning() << "配对失败:" << ipAddress << "错误:" << error;
-                
+
                 // 配对失败也回复"OK"给客户端，因为客户端只需要知道请求已处理
                 clientSocket->write("OK\n");
                 clientSocket->flush();
-                
+
                 // 清理launcher对象
                 launcher->deleteLater();
             });
-            
+
             launcher->execute(ComputerManager::getComputerManagerInstance());
             m_engine->rootContext()->setContextProperty("launcher", launcher);
-        } else {
-            qWarning() << "无法创建launcher: app或engine未设置";
-            
-            // 回复"OK"给客户端
-            clientSocket->write("OK\n");
-            clientSocket->flush();
         }
     }
 }
