@@ -48,6 +48,7 @@
 #include "settings/streamingpreferences.h"
 #include "gui/sdlgamepadkeynavigation.h"
 #include "backend/logmanager.h"
+#include "backend/connectionscreenserver.h"
 
 // 始终打印日志到文件
 #define LOG_TO_FILE
@@ -715,6 +716,13 @@ int main(int argc, char *argv[])
                                              return new LogManager();
                                          });
 
+    // Register ConnectionScreenServer type
+    qmlRegisterSingletonType<ConnectionScreenServer>("ConnectionScreenServer", 1, 0,
+                                                    "ConnectionScreenServer",
+                                                    [](QQmlEngine*, QJSEngine*) -> QObject* {
+                                                        return new ConnectionScreenServer();
+                                                    });
+
     // Create the identity manager on the main thread
     IdentityManager::get();
 
@@ -741,7 +749,14 @@ int main(int argc, char *argv[])
         initialView = "qrc:/gui/PcView.qml";
         break;
     case GlobalCommandLineParser::ConnectScreenRequested:
-        initialView = "qrc:/gui/ConnectScreenView.qml";
+        {
+            initialView = "qrc:/gui/ConnectScreenView.qml";
+            // Create ConnectionScreenServer instance and set as context property
+            auto connectionServer = new ConnectionScreenServer(&app);
+            StreamingPreferences* preferences = StreamingPreferences::get();
+            connectionServer->startServer(preferences->connectPort());
+            engine.rootContext()->setContextProperty("connectionServer", connectionServer);
+        }
         break;
     case GlobalCommandLineParser::StreamRequested:
         {
