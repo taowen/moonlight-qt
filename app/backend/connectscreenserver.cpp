@@ -7,6 +7,7 @@
 #include <cli/startstream.h>
 #include <QJsonDocument>
 #include <QJsonObject>
+#include <QTimer>
 
 ConnectScreenServer::ConnectScreenServer(QObject *parent)
     : QObject(parent), m_server(new QTcpServer(this))
@@ -101,7 +102,7 @@ void ConnectScreenServer::handleReadyRead()
         return;
     }
     
-    while (clientSocket->canReadLine()) {
+    if (clientSocket->canReadLine()) {
         QByteArray line = clientSocket->readLine();
         QString request = QString::fromUtf8(line).trimmed();
         qInfo() << "收到 ConnectScreen 请求:" << request;
@@ -112,7 +113,7 @@ void ConnectScreenServer::handleReadyRead()
             qWarning() << "无效的JSON请求格式";
             clientSocket->write("ERROR: Invalid JSON format\n");
             clientSocket->flush();
-            continue;
+            return;
         }
         
         QJsonObject jsonObj = jsonDoc.object();
@@ -121,32 +122,29 @@ void ConnectScreenServer::handleReadyRead()
         QString uuid = jsonObj["uuid"].toString();
         QString pin = jsonObj["pin"].toString();
         
-        // 处理 ping 操作
-        if (action == "ping") {
-            qInfo() << "收到 ping 请求";
-            clientSocket->write("PONG\n");
-            clientSocket->flush();
-            continue;
-        }
-        
         // 处理 connect 操作或默认操作（向后兼容）
         if (action.isEmpty() || action == "connect") {
             if (ipAddress.isEmpty()) {
                 qWarning() << "JSON请求缺少IP地址";
                 clientSocket->write("ERROR: Missing IP address\n");
                 clientSocket->flush();
-                continue;
+                return;
             }
             
             NvComputer* paired = nullptr;
             for(auto* computer : ComputerManager::getComputerManagerInstance()->getComputers()) {
                 qDebug() << "列出已配对计算机 " << computer->name << ": " << computer->activeAddress.toString() << " uuid " << computer->uuid;
-                if (computer->uuid == uuid) {
+                if (computer->uuid == uuid && computer->pairState == NvComputer::PS_PAIRED) {
                     paired = computer;
                 }
             }
 
             if (paired != nullptr) {
+                if(paired->appList.empty()) {
+                    clientSocket->write("ERROR\n");
+                    clientSocket->flush();
+                    return;
+                }
                 qInfo() << "跳过配对";
                 clientSocket->write("OK\n");
                 clientSocket->flush();
@@ -154,8 +152,7 @@ void ConnectScreenServer::handleReadyRead()
                 StreamingPreferences* preferences = StreamingPreferences::get();
                 auto launcher   = new CliStartStream::Launcher(ipAddress, "Desktop", preferences, m_app);
                 m_engine->rootContext()->setContextProperty("launcher", launcher);
-                
-                // 列出已配对计算机的所有应用程序
+
                 emit launchDesktop(new Session(paired, paired->appList[0], preferences));
             } else {
                 // 使用从JSON中获取的PIN码，如果为空则使用默认值"1234"
@@ -172,17 +169,27 @@ void ConnectScreenServer::handleReadyRead()
                 });
 
                 connect(launcher, &CliPair::Launcher::success, this, [this, clientSocket, ipAddress, uuid, launcher](NvComputer* computer) {
-                    qInfo() << "配对成功:" << ipAddress;
-
-                    // 配对成功后回复"OK"给客户端
-                    clientSocket->write("OK\n");
-                    clientSocket->flush();
+                    qInfo() << "配对回调:" << ipAddress;
                     
-                    StreamingPreferences* preferences = StreamingPreferences::get();
-                    auto launcher   = new CliStartStream::Launcher(ipAddress, "Desktop", preferences, m_app);
-                    m_engine->rootContext()->setContextProperty("launcher", launcher);
-
-                    emit launchDesktop(new Session(computer, computer->appList[0], preferences));
+                    // 添加3秒定时器，等待appList更新
+                    QTimer::singleShot(3000, this, [this, computer, ipAddress, clientSocket]() {
+                        if(computer->appList.empty()) {
+                            qWarning() << "应用列表为空";
+                            clientSocket->write("ERROR: Empty app list\n");
+                            clientSocket->flush();
+                            return;
+                        } else {
+                            // 配对成功后回复"OK"给客户端
+                            clientSocket->write("OK\n");
+                            clientSocket->flush();
+                        }
+                        
+                        StreamingPreferences* preferences = StreamingPreferences::get();
+                        auto launcher = new CliStartStream::Launcher(ipAddress, "Desktop", preferences, m_app);
+                        m_engine->rootContext()->setContextProperty("launcher", launcher);
+                        
+                        emit launchDesktop(new Session(computer, computer->appList[0], preferences));
+                    });
 
                     // 清理launcher对象
                     launcher->deleteLater();
@@ -191,8 +198,7 @@ void ConnectScreenServer::handleReadyRead()
                 connect(launcher, &CliPair::Launcher::failed, this, [this, clientSocket, ipAddress, launcher](QString error) {
                     qWarning() << "配对失败:" << ipAddress << "错误:" << error;
 
-                    // 配对失败也回复"OK"给客户端，因为客户端只需要知道请求已处理
-                    clientSocket->write("OK\n");
+                    clientSocket->write("ERROR: paring failed\n");
                     clientSocket->flush();
 
                     // 清理launcher对象
@@ -204,7 +210,7 @@ void ConnectScreenServer::handleReadyRead()
             }
         } else {
             // 未知操作
-            qWarning() << "未知的操作类型:" << action;
+            qWarning() << "未知的操作类型:" << action << action;
             clientSocket->write("ERROR: Unknown action\n");
             clientSocket->flush();
         }

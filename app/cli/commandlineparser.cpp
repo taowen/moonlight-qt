@@ -179,7 +179,7 @@ GlobalCommandLineParser::ParseResult GlobalCommandLineParser::parse(const QStrin
         // This method will not return and terminates the process if --version
         // or --help is specified
         parser.handleHelpAndVersionOptions();
-        parser.handleUnknownOptions();
+        // parser.handleUnknownOptions();
         return ConnectScreenRequested;
         // return NormalStartRequested;
     }
