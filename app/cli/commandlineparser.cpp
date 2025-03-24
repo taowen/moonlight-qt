@@ -202,6 +202,8 @@ GlobalCommandLineParser::ParseResult GlobalCommandLineParser::parse(const QStrin
                 return ListRequested;
             } else if (action == "connect-screen") {
                 return ConnectScreenRequested;
+            } else if (action == "normal") {
+                return NormalStartRequested;
             }
         }
 
