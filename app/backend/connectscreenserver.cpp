@@ -138,15 +138,15 @@ void ConnectScreenServer::handleReadyRead()
                 continue;
             }
             
-            bool paired = false;
-            for(const auto& computer : ComputerManager::getComputerManagerInstance()->getComputers()) {
+            NvComputer* paired = nullptr;
+            for(auto* computer : ComputerManager::getComputerManagerInstance()->getComputers()) {
                 qDebug() << "列出已配对计算机 " << computer->name << ": " << computer->activeAddress.toString() << " uuid " << computer->uuid;
                 if (computer->uuid == uuid) {
-                    paired = true;
+                    paired = computer;
                 }
             }
 
-            if (paired) {
+            if (paired != nullptr) {
                 qInfo() << "跳过配对";
                 clientSocket->write("OK\n");
                 clientSocket->flush();
@@ -156,7 +156,7 @@ void ConnectScreenServer::handleReadyRead()
                 m_engine->rootContext()->setContextProperty("launcher", launcher);
                 
                 // 列出已配对计算机的所有应用程序
-                emit launchDesktop(ipAddress, uuid);
+                emit launchDesktop(new Session(paired, paired->appList[0], preferences));
             } else {
                 // 使用从JSON中获取的PIN码，如果为空则使用默认值"1234"
                 QString pinToUse = pin.isEmpty() ? "1234" : pin;
@@ -171,7 +171,7 @@ void ConnectScreenServer::handleReadyRead()
                     qInfo() << "正在与" << computerName << "配对，PIN码:" << pin;
                 });
 
-                connect(launcher, &CliPair::Launcher::success, this, [this, clientSocket, ipAddress, uuid, launcher]() {
+                connect(launcher, &CliPair::Launcher::success, this, [this, clientSocket, ipAddress, uuid, launcher](NvComputer* computer) {
                     qInfo() << "配对成功:" << ipAddress;
 
                     // 配对成功后回复"OK"给客户端
@@ -181,8 +181,8 @@ void ConnectScreenServer::handleReadyRead()
                     StreamingPreferences* preferences = StreamingPreferences::get();
                     auto launcher   = new CliStartStream::Launcher(ipAddress, "Desktop", preferences, m_app);
                     m_engine->rootContext()->setContextProperty("launcher", launcher);
-                    
-                    emit launchDesktop(ipAddress, uuid);
+
+                    emit launchDesktop(new Session(computer, computer->appList[0], preferences));
 
                     // 清理launcher对象
                     launcher->deleteLater();

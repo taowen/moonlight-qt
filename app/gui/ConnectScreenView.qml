@@ -46,12 +46,14 @@ CenteredGridView {
         
         // 监听 connectScreenServer 的 launchDesktop 信号
         if (typeof connectScreenServer !== "undefined") {
-            connectScreenServer.launchDesktop.connect(function(ipAddress, uuid) {
-                console.log("收到 launchDesktop 信号，IP地址：" + ipAddress + "，UUID：" + uuid)
-                // 这里可以添加处理逻辑，例如连接到指定的电脑
-                var component = Qt.createComponent("CliStartStreamSegue.qml")
-                var startStreamView = component.createObject(stackView)
-                stackView.push(startStreamView)
+            connectScreenServer.launchDesktop.connect(function(session) {
+                var component = Qt.createComponent("StreamSegue.qml")
+                var segue = component.createObject(stackView, {
+                    "appName": "Desktop",
+                    "session": session,
+                    "quitAfter": false
+                })
+                stackView.push(segue)
             })
         } else {
             console.log("connectScreenServer 未定义，无法监听信号")

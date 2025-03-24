@@ -94,7 +94,7 @@ public:
             if (m_State == StatePairing) {
                 if (event.errorMessage.isEmpty()) {
                     m_State = StateComplete;
-                    emit q->success();
+                    emit q->success(event.computer);
                 }
                 else {
                     m_State = StateFailure;

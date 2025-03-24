@@ -30,7 +30,7 @@ signals:
     void searchingComputer();
     void pairing(QString pcName, QString pin);
     void failed(QString text);
-    void success();
+    void success(NvComputer* computer);
 
 private slots:
     void onComputerFound(NvComputer *computer);

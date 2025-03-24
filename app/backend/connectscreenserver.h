@@ -6,6 +6,8 @@
 #include <QGuiApplication>
 #include <QQmlApplicationEngine>
 
+#include <streaming/session.h>
+
 class ConnectScreenServer : public QObject
 {
     Q_OBJECT
@@ -23,7 +25,7 @@ public:
     void setAppAndEngine(QGuiApplication* app, QQmlApplicationEngine* engine);
 
 signals:
-    void launchDesktop(const QString& ipAddress, const QString& uuid);
+    void launchDesktop(Session* session);
     void serverStarted(quint16 port);
     void serverStopped();
     void serverError(const QString &errorMessage);
