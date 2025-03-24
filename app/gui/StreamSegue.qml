@@ -44,7 +44,7 @@ Item {
     function displayLaunchError(text)
     {
         // Display the error dialog after Session::exec() returns
-        streamSegueErrorDialog.text = text
+        // streamSegueErrorDialog.text = text
         console.error(text)
     }
 
