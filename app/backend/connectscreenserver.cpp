@@ -8,6 +8,7 @@
 #include <QJsonDocument>
 #include <QJsonObject>
 #include <QTimer>
+#include <QVersionNumber>
 
 ConnectScreenServer::ConnectScreenServer(QObject *parent)
     : QObject(parent), m_server(new QTcpServer(this))
@@ -73,6 +74,10 @@ void ConnectScreenServer::setAppAndEngine(QGuiApplication* app, QQmlApplicationE
     m_engine = engine;
 }
 
+void ConnectScreenServer::setComputerManager(ComputerManager* instance) {
+    computerManager = instance;
+}
+
 void ConnectScreenServer::handleNewConnection()
 {
     QTcpSocket *clientSocket = m_server->nextPendingConnection();
@@ -132,7 +137,7 @@ void ConnectScreenServer::handleReadyRead()
             }
             
             NvComputer* paired = nullptr;
-            for(auto* computer : ComputerManager::getComputerManagerInstance()->getComputers()) {
+            for(auto* computer : computerManager->getComputers()) {
                 qDebug() << "列出已配对计算机 " << computer->name << ": " << computer->activeAddress.toString() << " uuid " << computer->uuid;
                 if (computer->uuid == uuid && computer->pairState == NvComputer::PS_PAIRED) {
                     paired = computer;
@@ -165,7 +170,7 @@ void ConnectScreenServer::handleReadyRead()
                 });
 
                 connect(launcher, &CliPair::Launcher::pairing, this, [](QString computerName, QString pin) {
-                    qInfo() << "正在与" << computerName << "配对，PIN码:" << pin;
+
                 });
 
                 connect(launcher, &CliPair::Launcher::success, this, [this, clientSocket, ipAddress, uuid, launcher](NvComputer* computer) {
@@ -205,7 +210,7 @@ void ConnectScreenServer::handleReadyRead()
                     launcher->deleteLater();
                 });
 
-                launcher->execute(ComputerManager::getComputerManagerInstance());
+                launcher->execute(computerManager);
                 m_engine->rootContext()->setContextProperty("launcher", launcher);
             }
         } else {

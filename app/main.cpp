@@ -74,10 +74,12 @@ static QFile* s_LoggerFile;
 
 static void notifyLogManagerOfNewLogEntry(QString& message)
 {
-    // 通知 LogManager 有新的日志条目
-    if(LogManager::getLogManagerInstance() != nullptr) {
-        QMetaObject::invokeMethod(LogManager::getLogManagerInstance(), "onNewLogEntry",
-                                  Qt::QueuedConnection, Q_ARG(QString, message));
+    LogManager* logManager = LogManager::getLogManagerInstance();
+    if(logManager != nullptr) {
+        QMetaObject::invokeMethod(logManager, 
+                                 "onNewLogEntry",
+                                 Qt::QueuedConnection, 
+                                 Q_ARG(QString, message));
     }
 }
 
@@ -697,11 +699,7 @@ int main(int argc, char *argv[])
     qmlRegisterType<ComputerModel>("ComputerModel", 1, 0, "ComputerModel");
     qmlRegisterType<AppModel>("AppModel", 1, 0, "AppModel");
     qmlRegisterUncreatableType<Session>("Session", 1, 0, "Session", "Session cannot be created from QML");
-    qmlRegisterSingletonType<ComputerManager>("ComputerManager", 1, 0,
-                                              "ComputerManager",
-                                              [](QQmlEngine* qmlEngine, QJSEngine*) -> QObject* {
-                                                  return new ComputerManager(StreamingPreferences::get(qmlEngine));
-                                              });
+
     qmlRegisterSingletonType<AutoUpdateChecker>("AutoUpdateChecker", 1, 0,
                                                 "AutoUpdateChecker",
                                                 [](QQmlEngine*, QJSEngine*) -> QObject* {
@@ -755,6 +753,13 @@ int main(int argc, char *argv[])
     QString initialView;
     bool hasGUI = true;
 
+    ComputerManager* computerManager = new ComputerManager(StreamingPreferences::get(&engine));
+    qmlRegisterSingletonType<ComputerManager>("ComputerManager", 1, 0,
+                                              "ComputerManager",
+                                              [computerManager](QQmlEngine* qmlEngine, QJSEngine*) -> QObject* {
+                                                  return computerManager;
+                                              });
+
     switch (commandLineParserResult) {
     case GlobalCommandLineParser::NormalStartRequested:
         initialView = "qrc:/gui/PcView.qml";
@@ -764,6 +769,7 @@ int main(int argc, char *argv[])
             initialView = "qrc:/gui/ConnectScreenView.qml";
             // Create ConnectScreenServer instance and set as context property
             auto connectScreenServer = new ConnectScreenServer(&app);
+            connectScreenServer->setComputerManager(computerManager);
             connectScreenServer->setAppAndEngine(&app, &engine);
             StreamingPreferences* preferences = StreamingPreferences::get();
             connectScreenServer->startServer(preferences->connectPort());

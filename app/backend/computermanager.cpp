@@ -144,9 +144,6 @@ private:
     NvComputer* m_Computer;
 };
 
-// 初始化静态成员变量
-ComputerManager* ComputerManager::s_instance = nullptr;
-
 ComputerManager::ComputerManager(StreamingPreferences* prefs)
     : m_Prefs(prefs),
       m_PollingRef(0),
@@ -154,8 +151,6 @@ ComputerManager::ComputerManager(StreamingPreferences* prefs)
       m_CompatFetcher(nullptr),
       m_NeedsDelayedFlush(false)
 {
-    // 保存实例指针
-    s_instance = this;
     
     QSettings settings;
 
@@ -980,11 +975,6 @@ QString ComputerManager::generatePinString()
     std::mt19937 engine(rd());
 
     return QString::asprintf("%04u", dist(engine));
-}
-
-ComputerManager* ComputerManager::getComputerManagerInstance()
-{
-    return s_instance;
 }
 
 #include "computermanager.moc"

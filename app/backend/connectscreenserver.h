@@ -23,6 +23,7 @@ public:
 
     // 添加设置 app 和 engine 的方法
     void setAppAndEngine(QGuiApplication* app, QQmlApplicationEngine* engine);
+    void setComputerManager(ComputerManager* instance);
 
 signals:
     void launchDesktop(Session* session);
@@ -43,4 +44,5 @@ private:
     // 添加成员变量
     QGuiApplication* m_app = nullptr;
     QQmlApplicationEngine* m_engine = nullptr;
+    ComputerManager* computerManager = nullptr;
 };
