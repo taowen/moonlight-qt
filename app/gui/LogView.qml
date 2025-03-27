@@ -114,30 +114,20 @@ Flickable {
             }
         }
 
-        // 添加显示当前日志文件路径的标签
+        // 添加"请连接"文本
         Rectangle {
             width: parent.width - parent.padding * 2
             height: 30
-            color: "#f5f5f5"
+            color: "#f0f0f0"
             radius: 3
             border.color: "#dddddd"
             border.width: 1
             
-            TextEdit {
-                anchors {
-                    left: parent.left
-                    right: parent.right
-                    verticalCenter: parent.verticalCenter
-                    margins: 8
-                }
-                text: qsTr("文件路径: ") + logFilePath
-                font.pointSize: 9
-                wrapMode: Text.Wrap
+            Label {
+                anchors.centerIn: parent
+                text: qsTr("请连接")
+                font.pointSize: 10
                 color: "#666666"
-                readOnly: true
-                selectByMouse: true
-                selectedTextColor: "white"
-                selectionColor: "#007acc"
             }
         }
 
@@ -219,6 +209,34 @@ Flickable {
                     font.pointSize: 12
                     color: "#999999"
                 }
+            }
+        }
+
+        
+        // 添加显示当前日志文件路径的标签
+        Rectangle {
+            width: parent.width - parent.padding * 2
+            height: 30
+            color: "#f5f5f5"
+            radius: 3
+            border.color: "#dddddd"
+            border.width: 1
+            
+            TextEdit {
+                anchors {
+                    left: parent.left
+                    right: parent.right
+                    verticalCenter: parent.verticalCenter
+                    margins: 8
+                }
+                text: qsTr("日志路径: ") + logFilePath
+                font.pointSize: 9
+                wrapMode: Text.Wrap
+                color: "#666666"
+                readOnly: true
+                selectByMouse: true
+                selectedTextColor: "white"
+                selectionColor: "#007acc"
             }
         }
     }
