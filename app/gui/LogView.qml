@@ -7,7 +7,7 @@ import LogManager 1.0
 
 Flickable {
     id: logPage
-    objectName: qsTr("日志")
+    objectName: qsTr("等待被连接")
 
     boundsBehavior: Flickable.OvershootBounds
 
@@ -105,7 +105,7 @@ Flickable {
                 anchors.margins: 5
 
                 Label {
-                    text: qsTr("系统日志")
+                    text: qsTr("自启版是从屏易连侧发起连接，需在其设置中先配对")
                     font.pointSize: 14
                     font.bold: true
                     color: "white"
@@ -130,7 +130,7 @@ Flickable {
                     verticalCenter: parent.verticalCenter
                     margins: 8
                 }
-                text: qsTr("屏易连请连接：") + " " + LogManager.getLocalIpAddresses().join(" | ")
+                text: qsTr("屏易连如果没有自动识别，可手工在设置中输入ip：") + " " + LogManager.getLocalIpAddresses().join(" | ")
                 font.pointSize: 10
                 color: "#666666"
                 readOnly: true

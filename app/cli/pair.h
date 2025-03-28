@@ -23,7 +23,7 @@ public:
     explicit Launcher(QString computer, QString predefinedPin,
                       QObject *parent = nullptr);
     ~Launcher();
-    Q_INVOKABLE void execute(ComputerManager *manager);
+    Q_INVOKABLE void execute(ComputerManager *manager, QString uuid);
     Q_INVOKABLE bool isExecuted() const;
 
 signals:

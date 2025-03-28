@@ -162,6 +162,7 @@ void ConnectScreenServer::handleReadyRead()
             } else {
                 // 使用从JSON中获取的PIN码，如果为空则使用默认值"1234"
                 QString pinToUse = pin.isEmpty() ? "1234" : pin;
+
                 auto launcher = new CliPair::Launcher(ipAddress, pinToUse, m_app);
 
                 // 连接信号以处理配对过程和结果
@@ -180,13 +181,17 @@ void ConnectScreenServer::handleReadyRead()
                     QTimer::singleShot(3000, this, [this, computer, ipAddress, clientSocket]() {
                         if(computer->appList.empty()) {
                             qWarning() << "应用列表为空";
-                            clientSocket->write("ERROR: Empty app list\n");
-                            clientSocket->flush();
+                            if (clientSocket && clientSocket->isValid() && clientSocket->state() == QAbstractSocket::ConnectedState) {
+                                clientSocket->write("ERROR: Empty app list\n");
+                                clientSocket->flush();
+                            }
                             return;
                         } else {
                             // 配对成功后回复"OK"给客户端
-                            clientSocket->write("OK\n");
-                            clientSocket->flush();
+                            if (clientSocket && clientSocket->isValid() && clientSocket->state() == QAbstractSocket::ConnectedState) {
+                                clientSocket->write("OK\n");
+                                clientSocket->flush();
+                            }
                         }
                         
                         StreamingPreferences* preferences = StreamingPreferences::get();
@@ -203,14 +208,16 @@ void ConnectScreenServer::handleReadyRead()
                 connect(launcher, &CliPair::Launcher::failed, this, [this, clientSocket, ipAddress, launcher](QString error) {
                     qWarning() << "配对失败:" << ipAddress << "错误:" << error;
 
-                    clientSocket->write("ERROR: paring failed\n");
-                    clientSocket->flush();
+                    if (clientSocket && clientSocket->isValid() && clientSocket->state() == QAbstractSocket::ConnectedState) {
+                        clientSocket->write("ERROR: paring failed\n");
+                        clientSocket->flush();
+                    }
 
                     // 清理launcher对象
                     launcher->deleteLater();
                 });
 
-                launcher->execute(computerManager);
+                launcher->execute(computerManager, uuid);
                 m_engine->rootContext()->setContextProperty("launcher", launcher);
             }
         } else {

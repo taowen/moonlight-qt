@@ -35,6 +35,7 @@ public:
     ComputerManager *computerManager;
     NvComputer *computer;
     QString errorMessage;
+    QString uuid;
 };
 
 class LauncherPrivate
@@ -62,23 +63,41 @@ public:
                     m_PredefinedPin = m_ComputerManager->generatePinString();
                 }
 
-                m_ComputerSeeker = new ComputerSeeker(m_ComputerManager, m_ComputerName, q);
-                q->connect(m_ComputerSeeker, &ComputerSeeker::computerFound,
-                           q, &Launcher::onComputerFound);
-                q->connect(m_ComputerSeeker, &ComputerSeeker::errorTimeout,
-                           q, &Launcher::onTimeout);
-                m_ComputerSeeker->start(COMPUTER_SEEK_TIMEOUT);
+                NvComputer* found = nullptr;
+                for(auto* computer : m_ComputerManager->getComputers()) {
+                    if (computer->uuid == event.uuid) {
+                        found = computer;
+                    }
+                }
+                if (found == nullptr) {
+                    m_ComputerSeeker = new ComputerSeeker(m_ComputerManager, m_ComputerName, q);
+                    q->connect(m_ComputerSeeker, &ComputerSeeker::computerFound,
+                               q, &Launcher::onComputerFound);
+                    q->connect(m_ComputerSeeker, &ComputerSeeker::errorTimeout,
+                               q, &Launcher::onTimeout);
+                    m_ComputerSeeker->start(COMPUTER_SEEK_TIMEOUT);
 
-                emit q->searchingComputer();
+                    emit q->searchingComputer();
+                } else {
+                    if (found->pairState == NvComputer::PS_PAIRED) {
+                        m_State = StateComplete;
+                        emit q->success(found);
+                    }
+                    else {
+                        Q_ASSERT(!m_PredefinedPin.isEmpty());
+                        m_State = StatePairing;
+                        m_ComputerManager->pairHost(found, m_PredefinedPin);
+                        emit q->pairing(found->name, m_PredefinedPin);
+                    }
+                }
             }
             break;
         // Occurs when searched computer is found
         case Event::ComputerFound:
             if (m_State == StateSeekComputer) {
                 if (event.computer->pairState == NvComputer::PS_PAIRED) {
-                    m_State = StateFailure;
-                    QString msg = QObject::tr("%1 is already paired").arg(event.computer->name);
-                    emit q->failed(msg);
+                    m_State = StateComplete;
+                    emit q->success(event.computer);
                 }
                 else {
                     Q_ASSERT(!m_PredefinedPin.isEmpty());
@@ -140,11 +159,12 @@ Launcher::~Launcher()
 {
 }
 
-void Launcher::execute(ComputerManager *manager)
+void Launcher::execute(ComputerManager *manager, QString uuid)
 {
     Q_D(Launcher);
     Event event(Event::Executed);
     event.computerManager = manager;
+    event.uuid = uuid;
     d->handleEvent(event);
 }
 
