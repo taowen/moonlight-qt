@@ -25,6 +25,7 @@ public:
     Q_INVOKABLE QStringList readLogFile(const QString &filePath, int maxLines = 1000);
     Q_INVOKABLE QStringList getLogFilesList();
     Q_INVOKABLE QString getLogDir();
+    Q_INVOKABLE QStringList getLocalIpAddresses();
 
 signals:
     void latestLogPathChanged();

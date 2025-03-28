@@ -6,6 +6,7 @@
 #include <QDateTime>
 #include <QRegularExpression>
 #include <QFileSystemWatcher>
+#include <QNetworkInterface>
 
 // 初始化静态实例指针
 LogManager* LogManager::s_instance = nullptr;
@@ -154,4 +155,35 @@ void LogManager::onNewLogEntry(const QString &entry)
             emit logContentChanged();
         }
     }
+}
+
+QStringList LogManager::getLocalIpAddresses()
+{
+    QStringList ipAddresses;
+    
+    // 获取所有网络接口
+    QList<QNetworkInterface> interfaces = QNetworkInterface::allInterfaces();
+    
+    // 遍历每个网络接口
+    for (const QNetworkInterface &interface : interfaces) {
+        // 只考虑活动的接口
+        if (interface.flags().testFlag(QNetworkInterface::IsUp) && 
+            !interface.flags().testFlag(QNetworkInterface::IsLoopBack)) {
+            
+            // 获取接口的所有IP地址
+            QList<QNetworkAddressEntry> entries = interface.addressEntries();
+            
+            // 遍历每个IP地址
+            for (const QNetworkAddressEntry &entry : entries) {
+                QHostAddress ip = entry.ip();
+                
+                // 只添加IPv4地址
+                if (ip.protocol() == QAbstractSocket::IPv4Protocol) {
+                    ipAddresses.append(ip.toString());
+                }
+            }
+        }
+    }
+    
+    return ipAddresses;
 }

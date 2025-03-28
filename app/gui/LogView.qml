@@ -123,11 +123,20 @@ Flickable {
             border.color: "#dddddd"
             border.width: 1
             
-            Label {
-                anchors.centerIn: parent
-                text: qsTr("请连接")
+            TextEdit {
+                anchors {
+                    left: parent.left
+                    right: parent.right
+                    verticalCenter: parent.verticalCenter
+                    margins: 8
+                }
+                text: qsTr("屏易连请连接：") + " " + LogManager.getLocalIpAddresses().join(", ")
                 font.pointSize: 10
                 color: "#666666"
+                readOnly: true
+                selectByMouse: true
+                selectedTextColor: "white"
+                selectionColor: "#007acc"
             }
         }
 
