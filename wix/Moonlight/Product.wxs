@@ -93,6 +93,16 @@
                      KeyPath="yes" />
     </Component>
 
+    <!-- 添加开机自动启动组件 -->
+    <Component Id="MoonlightAutoStart" Directory="INSTALLFOLDER">
+      <RegistryValue Root="HKCU"
+                     Key="Software\Microsoft\Windows\CurrentVersion\Run"
+                     Name="$(var.ShortName)"
+                     Type="string"
+                     Value="&quot;[#MoonlightExe]&quot;"
+                     KeyPath="yes" />
+    </Component>
+
     <DirectoryRef Id="INSTALLFOLDER">
       <Component Id="Moonlight">
         <File Id="MoonlightExe"
@@ -115,6 +125,7 @@
       <ComponentRef Id="MoonlightShortcuts" />
       <ComponentRef Id="MoonlightDesktopShortcutState" />
       <ComponentRef Id="MoonlightDesktopShortcut" />
+      <ComponentRef Id="MoonlightAutoStart" />
       <ComponentGroupRef Id="MoonlightDependencies" />
     </Feature>
 

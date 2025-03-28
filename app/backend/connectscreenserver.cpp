@@ -170,7 +170,7 @@ void ConnectScreenServer::handleReadyRead()
                 });
 
                 connect(launcher, &CliPair::Launcher::pairing, this, [](QString computerName, QString pin) {
-
+                    qInfo() << "paring:" << computerName << " with " << pin;
                 });
 
                 connect(launcher, &CliPair::Launcher::success, this, [this, clientSocket, ipAddress, uuid, launcher](NvComputer* computer) {
