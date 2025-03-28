@@ -8,6 +8,8 @@
 #include <QFileSystemWatcher>
 #include <QNetworkInterface>
 
+#include <settings/streamingpreferences.h>
+
 // 初始化静态实例指针
 LogManager* LogManager::s_instance = nullptr;
 
@@ -179,7 +181,10 @@ QStringList LogManager::getLocalIpAddresses()
                 
                 // 只添加IPv4地址
                 if (ip.protocol() == QAbstractSocket::IPv4Protocol) {
-                    ipAddresses.append(ip.toString());
+                    // 获取连接端口
+                    int port = StreamingPreferences::get()->connectPort();
+                    // 添加IP地址和端口
+                    ipAddresses.append(ip.toString() + ":" + QString::number(port));
                 }
             }
         }

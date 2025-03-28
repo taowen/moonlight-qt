@@ -130,7 +130,7 @@ Flickable {
                     verticalCenter: parent.verticalCenter
                     margins: 8
                 }
-                text: qsTr("屏易连请连接：") + " " + LogManager.getLocalIpAddresses().join(", ")
+                text: qsTr("屏易连请连接：") + " " + LogManager.getLocalIpAddresses().join(" | ")
                 font.pointSize: 10
                 color: "#666666"
                 readOnly: true
