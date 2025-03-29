@@ -173,6 +173,7 @@ SOURCES += \
     backend/nvapp.cpp \
     cli/pair.cpp \
     main.cpp \
+    backend/connectscreenserver.cpp \
     backend/computerseeker.cpp \
     backend/identitymanager.cpp \
     backend/nvcomputer.cpp \
@@ -209,6 +210,7 @@ SOURCES += \
     wm.cpp
 
 HEADERS += \
+    backend/connectscreenserver.h \
     backend/nvaddress.h \
     backend/nvapp.h \
     cli/pair.h \
