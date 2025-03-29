@@ -144,6 +144,9 @@ public:
 
     Q_INVOKABLE bool retranslate();
 
+    Q_INVOKABLE bool addToStartup();
+    Q_INVOKABLE bool removeFromStartup();
+
     // Directly accessible members for preferences
     int width;
     int height;

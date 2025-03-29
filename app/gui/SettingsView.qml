@@ -1731,6 +1731,45 @@ Flickable {
                         ToolTip.text: qsTr("安卓屏易连通过这个端口连接过来触发投屏")
                     }
                 }
+
+                Row {
+                    spacing: 10
+                    width: parent.width
+                    
+                    Button {
+                        id: addStartupButton
+                        text: qsTr("添加到开机启动")
+                        onClicked: {
+                            if (StreamingPreferences.addToStartup()) {
+                                ToolTip.show(qsTr("已成功添加到开机启动项"), 3000)
+                            } else {
+                                ToolTip.show(qsTr("添加开机启动项失败"), 3000)
+                            }
+                        }
+                        
+                        ToolTip.delay: 1000
+                        ToolTip.timeout: 5000
+                        ToolTip.visible: hovered
+                        ToolTip.text: qsTr("将应用程序添加到系统开机启动项，以便在系统启动时自动运行")
+                    }
+                    
+                    Button {
+                        id: removeStartupButton
+                        text: qsTr("删除开机自启动")
+                        onClicked: {
+                            if (StreamingPreferences.removeFromStartup()) {
+                                ToolTip.show(qsTr("已成功从开机启动项中移除"), 3000)
+                            } else {
+                                ToolTip.show(qsTr("移除开机启动项失败"), 3000)
+                            }
+                        }
+                        
+                        ToolTip.delay: 1000
+                        ToolTip.timeout: 5000
+                        ToolTip.visible: hovered
+                        ToolTip.text: qsTr("从系统开机启动项中移除应用程序")
+                    }
+                }
             }
         }
     }
