@@ -5,6 +5,7 @@ import QtQuick.Layouts 1.3
 import ComputerModel 1.0
 
 import ComputerManager 1.0
+import ConnectScreenServer 1.0
 import StreamingPreferences 1.0
 import SystemProperties 1.0
 import SdlGamepadKeyNavigation 1.0
@@ -43,6 +44,17 @@ CenteredGridView {
         if (currentIndex == -1 && SdlGamepadKeyNavigation.getConnectedGamepads() > 0) {
             currentIndex = 0
         }
+
+        ConnectScreenServer.launchDesktop.connect(function(session) {
+                        var component = Qt.createComponent("StreamSegue.qml")
+                        var segue = component.createObject(stackView, {
+                            "appName": "Desktop",
+                            "session": session,
+                            "quitAfter": false
+                        })
+                        stackView.push(segue)
+                    })
+        ConnectScreenServer.startServer(ComputerManager)
     }
 
     StackView.onDeactivating: {

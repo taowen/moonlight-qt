@@ -23,14 +23,14 @@ public:
     explicit Launcher(QString computer, QString predefinedPin,
                       QObject *parent = nullptr);
     ~Launcher();
-    Q_INVOKABLE void execute(ComputerManager *manager);
+    Q_INVOKABLE void execute(ComputerManager *manager, QString uuid);
     Q_INVOKABLE bool isExecuted() const;
 
 signals:
     void searchingComputer();
     void pairing(QString pcName, QString pin);
     void failed(QString text);
-    void success();
+    void success(NvComputer *computer);
 
 private slots:
     void onComputerFound(NvComputer *computer);

@@ -239,6 +239,8 @@ void ffmpegLogToDiskHandler(void* ptr, int level, const char* fmt, va_list vl)
 #include <Windows.h>
 #include <DbgHelp.h>
 
+#include <backend/connectscreenserver.h>
+
 static UINT s_HitUnhandledException = 0;
 
 LONG WINAPI UnhandledExceptionHandler(struct _EXCEPTION_POINTERS *ExceptionInfo)
@@ -681,6 +683,11 @@ int main(int argc, char *argv[])
                                               "ComputerManager",
                                               [](QQmlEngine* qmlEngine, QJSEngine*) -> QObject* {
                                                   return new ComputerManager(StreamingPreferences::get(qmlEngine));
+                                              });
+    qmlRegisterSingletonType<ConnectScreenServer>("ConnectScreenServer", 1, 0,
+                                              "ConnectScreenServer",
+                                              [](QQmlEngine* qmlEngine, QJSEngine*) -> QObject* {
+                                                  return new ConnectScreenServer(qmlEngine, StreamingPreferences::get(qmlEngine));
                                               });
     qmlRegisterSingletonType<AutoUpdateChecker>("AutoUpdateChecker", 1, 0,
                                                 "AutoUpdateChecker",
