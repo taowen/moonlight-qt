@@ -3,6 +3,7 @@
 
 #include <QGuiApplication>
 #include <QLibraryInfo>
+#include <QNetworkInterface>
 
 #include "streaming/session.h"
 #include "streaming/streamutils.h"
@@ -20,6 +21,29 @@ SystemProperties::SystemProperties()
     isRunningXWayland = isRunningWayland && QGuiApplication::platformName() == "xcb";
     usesMaterial3Theme = QLibraryInfo::version() >= QVersionNumber(6, 5, 0);
     QString nativeArch = QSysInfo::currentCpuArchitecture();
+
+    // 获取本机所有IP地址
+    QStringList addressList;
+    const QList<QNetworkInterface> interfaces = QNetworkInterface::allInterfaces();
+    for (const QNetworkInterface &interface : interfaces) {
+        // 跳过禁用的接口和回环接口
+        if (!(interface.flags() & QNetworkInterface::IsUp) || 
+            (interface.flags() & QNetworkInterface::IsLoopBack)) {
+            continue;
+        }
+        
+        const QList<QNetworkAddressEntry> entries = interface.addressEntries();
+        for (const QNetworkAddressEntry &entry : entries) {
+            QHostAddress address = entry.ip();
+            // 只添加IPv4地址
+            if (address.protocol() == QAbstractSocket::IPv4Protocol) {
+                addressList.append(address.toString());
+            }
+        }
+    }
+    
+    // 用 " | " 分隔所有IP地址
+    localAddress = addressList.join(" | ");
 
 #ifdef Q_OS_WIN32
     {

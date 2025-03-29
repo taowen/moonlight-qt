@@ -525,4 +525,24 @@ ApplicationWindow {
             }
         }
     }
+    
+    // 添加底部显示本机IP地址的文本区域
+    footer: Rectangle {
+        id: footerRect
+        height: 30
+        color: Material.background
+        
+        TextEdit {
+            id: localIpText
+            anchors.fill: parent
+            readOnly: true
+            selectByMouse: true
+            horizontalAlignment: Text.AlignRight
+            verticalAlignment: Text.AlignVCenter
+            color: Material.foreground
+            font.pointSize: 9
+            rightPadding: 10
+            text: qsTr("屏易连在设置中配对，填入的ip地址: ") + SystemProperties.localAddress
+        }
+    }
 }

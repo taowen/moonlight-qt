@@ -1708,7 +1708,7 @@ Flickable {
 
                     Label {
                         id: connectPortLabel
-                        text: qsTr("屏易连端口号:")
+                        text: qsTr("屏易连配对端口号:")
                         font.pointSize: 12
                         anchors.verticalCenter: connectPortField.verticalCenter
                     }
