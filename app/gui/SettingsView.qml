@@ -1770,6 +1770,25 @@ Flickable {
                         ToolTip.text: qsTr("从系统开机启动项中移除应用程序")
                     }
                 }
+
+                Label {
+                    id: autoStartStatus
+                    width: parent.width
+                    text: StreamingPreferences.isAutoStart ? 
+                          qsTr("当前状态: 已设置开机自启动") : 
+                          qsTr("当前状态: 未设置开机自启动")
+                    font.pointSize: 12
+                    color: StreamingPreferences.isAutoStart ? "green" : "red"
+                    
+                    Connections {
+                        target: StreamingPreferences
+                        function onIsAutoStartChanged() {
+                            autoStartStatus.text = StreamingPreferences.isAutoStart ? 
+                                qsTr("当前状态: 已设置开机自启动") : 
+                                qsTr("当前状态: 未设置开机自启动")
+                        }
+                    }
+                }
             }
         }
     }

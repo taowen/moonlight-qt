@@ -168,8 +168,7 @@ void StreamingPreferences::reload()
     language = static_cast<Language>(settings.value(SER_LANGUAGE,
                                                     static_cast<int>(Language::LANG_AUTO)).toInt());
     connectPort = settings.value(SER_CONNECTPORT, 42515).toInt();
-
-
+    
     // Perform default settings updates as required based on last default version
     if (defaultVer < 1) {
 #ifdef Q_OS_DARWIN
@@ -409,13 +408,30 @@ int StreamingPreferences::getDefaultBitrate(int width, int height, int fps, bool
     return qRound(resolutionFactor * frameRateFactor) * 1000;
 }
 
+bool StreamingPreferences::getIsAutoStart()
+{
+#ifdef Q_OS_WIN
+    QSettings settings("HKEY_CURRENT_USER\\Software\\Microsoft\\Windows\\CurrentVersion\\Run", QSettings::NativeFormat);
+    return settings.contains("Moonlight");
+#elif defined(Q_OS_LINUX)
+    QString desktopFile = QStandardPaths::writableLocation(QStandardPaths::ConfigLocation) + "/autostart/moonlight.desktop";
+    return QFile::exists(desktopFile);
+#elif defined(Q_OS_DARWIN)
+    QString plistFile = QDir::homePath() + "/Library/LaunchAgents/com.moonlight-stream.Moonlight.plist";
+    return QFile::exists(plistFile);
+#else
+    return false;
+#endif
+}
+
 bool StreamingPreferences::addToStartup()
 {
+    bool success = false;
 #ifdef Q_OS_WIN
     QSettings settings("HKEY_CURRENT_USER\\Software\\Microsoft\\Windows\\CurrentVersion\\Run", QSettings::NativeFormat);
     QString appPath = QDir::toNativeSeparators(QCoreApplication::applicationFilePath());
     settings.setValue("Moonlight", appPath);
-    return true;
+    success = true;
 #elif defined(Q_OS_LINUX)
     QString autostartDir = QStandardPaths::writableLocation(QStandardPaths::ConfigLocation) + "/autostart";
     QDir dir(autostartDir);
@@ -437,9 +453,8 @@ bool StreamingPreferences::addToStartup()
         stream << "NoDisplay=false\n";
         stream << "X-GNOME-Autostart-enabled=true\n";
         file.close();
-        return true;
+        success = true;
     }
-    return false;
 #elif defined(Q_OS_DARWIN)
     QString launchAgentsDir = QDir::homePath() + "/Library/LaunchAgents";
     QDir dir(launchAgentsDir);
@@ -471,39 +486,47 @@ bool StreamingPreferences::addToStartup()
         
         // 执行launchctl命令加载plist
         QProcess::execute("launchctl", QStringList() << "load" << plistFile);
-        return true;
+        success = true;
     }
-    return false;
 #else
     // 不支持的平台
     return false;
 #endif
+
+    if (success) {
+        emit isAutoStartChanged();
+    }
+    return success;
 }
 
 bool StreamingPreferences::removeFromStartup()
 {
+    bool success = false;
 #ifdef Q_OS_WIN
     QSettings settings("HKEY_CURRENT_USER\\Software\\Microsoft\\Windows\\CurrentVersion\\Run", QSettings::NativeFormat);
     settings.remove("Moonlight");
-    return true;
+    success = true;
 #elif defined(Q_OS_LINUX)
     QString desktopFile = QStandardPaths::writableLocation(QStandardPaths::ConfigLocation) + "/autostart/moonlight.desktop";
     QFile file(desktopFile);
     if (file.exists()) {
-        return file.remove();
+        success = file.remove();
     }
-    return true;
 #elif defined(Q_OS_DARWIN)
     QString plistFile = QDir::homePath() + "/Library/LaunchAgents/com.moonlight-stream.Moonlight.plist";
     QFile file(plistFile);
     if (file.exists()) {
         // 先卸载plist
         QProcess::execute("launchctl", QStringList() << "unload" << plistFile);
-        return file.remove();
+        success = file.remove();
     }
-    return true;
 #else
     // 不支持的平台
     return false;
 #endif
+
+    if (success) {
+        emit isAutoStartChanged();
+    }
+    return success;
 }

@@ -141,6 +141,7 @@ public:
     Q_PROPERTY(CaptureSysKeysMode captureSysKeysMode MEMBER captureSysKeysMode NOTIFY captureSysKeysModeChanged)
     Q_PROPERTY(Language language MEMBER language NOTIFY languageChanged)
     Q_PROPERTY(int connectPort MEMBER connectPort NOTIFY connectPortChanged)
+    Q_PROPERTY(bool isAutoStart READ getIsAutoStart NOTIFY isAutoStartChanged)
 
     Q_INVOKABLE bool retranslate();
 
@@ -186,6 +187,8 @@ public:
     CaptureSysKeysMode captureSysKeysMode;
     int connectPort;
 
+    Q_INVOKABLE bool getIsAutoStart();
+
 signals:
     void displayModeChanged();
     void bitrateChanged();
@@ -221,6 +224,7 @@ signals:
     void keepAwakeChanged();
     void languageChanged();
     void connectPortChanged();
+    void isAutoStartChanged();
 
 private:
     explicit StreamingPreferences(QQmlEngine *qmlEngine);
