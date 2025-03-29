@@ -1701,6 +1701,36 @@ Flickable {
                                   qsTr("You can toggle it at any time while streaming using Ctrl+Alt+Shift+S or Select+L1+R1+X.") + "\n\n" +
                                   qsTr("The performance overlay is not supported on Steam Link or Raspberry Pi.")
                 }
+
+                Row {
+                    spacing: 5
+                    width: parent.width
+
+                    Label {
+                        id: connectPortLabel
+                        text: qsTr("屏易连端口号:")
+                        font.pointSize: 12
+                        anchors.verticalCenter: connectPortField.verticalCenter
+                    }
+
+                    TextField {
+                        id: connectPortField
+                        width: 100
+                        text: StreamingPreferences.connectPort
+                        validator: IntValidator { bottom: 1; top: 65535 }
+                        inputMethodHints: Qt.ImhDigitsOnly
+                        onTextChanged: {
+                            if (acceptableInput) {
+                                StreamingPreferences.connectPort = parseInt(text)
+                            }
+                        }
+
+                        ToolTip.delay: 1000
+                        ToolTip.timeout: 5000
+                        ToolTip.visible: hovered
+                        ToolTip.text: qsTr("安卓屏易连通过这个端口连接过来触发投屏")
+                    }
+                }
             }
         }
     }
