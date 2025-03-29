@@ -47,7 +47,7 @@ ApplicationWindow {
 
         // Display any modal dialogs for configuration warnings
         if (SystemProperties.isWow64) {
-            wow64Dialog.open()
+            // wow64Dialog.open()
         }
         else if (!SystemProperties.hasHardwareAcceleration) {
             if (SystemProperties.isRunningXWayland) {
