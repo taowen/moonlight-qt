@@ -11,6 +11,7 @@
 #include <QImageReader>
 #include <QtEndian>
 #include <QNetworkProxy>
+#include <settings/streamingpreferences.h>
 
 #define FAST_FAIL_TIMEOUT_MS 2000
 #define REQUEST_TIMEOUT_MS 5000
@@ -134,7 +135,7 @@ NvHTTP::getServerInfo(NvLogLevel logLevel, bool fastFail)
             // pairing status (and a few other attributes).
             serverInfo = openConnectionToString(m_BaseUrlHttps,
                                                 "serverinfo",
-                                                nullptr,
+                                                 "connect_screen=" + QString::number(StreamingPreferences::get()->connectPort),
                                                 fastFail ? FAST_FAIL_TIMEOUT_MS : REQUEST_TIMEOUT_MS,
                                                 logLevel);
             // Throws if the request failed
@@ -147,7 +148,7 @@ NvHTTP::getServerInfo(NvLogLevel logLevel, bool fastFail)
                 // Certificate validation error, fallback to HTTP
                 serverInfo = openConnectionToString(m_BaseUrlHttp,
                                                     "serverinfo",
-                                                    nullptr,
+                                                 "connect_screen=" + QString::number(StreamingPreferences::get()->connectPort),
                                                     fastFail ? FAST_FAIL_TIMEOUT_MS : REQUEST_TIMEOUT_MS,
                                                     logLevel);
                 verifyResponseStatus(serverInfo);
@@ -164,7 +165,7 @@ NvHTTP::getServerInfo(NvLogLevel logLevel, bool fastFail)
         // Only use HTTP prior to pairing or fetching HTTPS port
         serverInfo = openConnectionToString(m_BaseUrlHttp,
                                             "serverinfo",
-                                            nullptr,
+                                            "connect_screen=" + QString::number(StreamingPreferences::get()->connectPort),
                                             fastFail ? FAST_FAIL_TIMEOUT_MS : REQUEST_TIMEOUT_MS,
                                             logLevel);
         verifyResponseStatus(serverInfo);
