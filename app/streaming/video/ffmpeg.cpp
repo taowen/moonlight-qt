@@ -1465,67 +1465,41 @@ bool FFmpegVideoDecoder::initialize(PDECODER_PARAMETERS params)
     const AVCodec* decoder;
     void* codecIterator;
 
-    // Look for a hardware decoder first unless software-only
-    if (params->vds != StreamingPreferences::VDS_FORCE_SOFTWARE) {
-        QSet<const AVCodec*> terminallyFailedHardwareDecoders;
+    // Only try hardware decoders - no software fallback
+    if (params->vds == StreamingPreferences::VDS_FORCE_SOFTWARE) {
+        SDL_LogError(SDL_LOG_CATEGORY_APPLICATION,
+                     "Software decoding is not supported - hardware decoding required");
+        return false;
+    }
 
-        // Try tier 1 hwaccel decoders first
-        if (tryInitializeHwAccelDecoder(params, 0, terminallyFailedHardwareDecoders)) {
-            return true;
-        }
+    QSet<const AVCodec*> terminallyFailedHardwareDecoders;
 
-        // Iterate through non-hwaccel and non-standard hwaccel hardware decoders that have AV_CODEC_CAP_HARDWARE set.
-        //
-        // We first try to find decoders with a hwaccel format that can be rendered without CPU copyback.
-        // Failing that, we will accept a decoder that only supports copyback (or one with unknown pixfmts).
-        if (tryInitializeNonHwAccelDecoder(params, true /* zero copy */, terminallyFailedHardwareDecoders)) {
-            return true;
-        }
-        if (tryInitializeNonHwAccelDecoder(params, false /* zero copy */, terminallyFailedHardwareDecoders)) {
-            return true;
-        }
+    // Try tier 1 hwaccel decoders first
+    if (tryInitializeHwAccelDecoder(params, 0, terminallyFailedHardwareDecoders)) {
+        return true;
+    }
 
-        // Try the remaining tiers of hwaccel decoders
-        for (int pass = 1; pass <= MAX_DECODER_PASS; pass++) {
-            if (tryInitializeHwAccelDecoder(params, pass, terminallyFailedHardwareDecoders)) {
-                return true;
-            }
+    // Iterate through non-hwaccel and non-standard hwaccel hardware decoders that have AV_CODEC_CAP_HARDWARE set.
+    //
+    // We first try to find decoders with a hwaccel format that can be rendered without CPU copyback.
+    // Failing that, we will accept a decoder that only supports copyback (or one with unknown pixfmts).
+    if (tryInitializeNonHwAccelDecoder(params, true /* zero copy */, terminallyFailedHardwareDecoders)) {
+        return true;
+    }
+    if (tryInitializeNonHwAccelDecoder(params, false /* zero copy */, terminallyFailedHardwareDecoders)) {
+        return true;
+    }
+
+    // Try the remaining tiers of hwaccel decoders
+    for (int pass = 1; pass <= MAX_DECODER_PASS; pass++) {
+        if (tryInitializeHwAccelDecoder(params, pass, terminallyFailedHardwareDecoders)) {
+            return true;
         }
     }
 
-    // Iterate through all software decoders if allowed
-    if (params->vds != StreamingPreferences::VDS_FORCE_HARDWARE) {
-        codecIterator = NULL;
-        while ((decoder = av_codec_iterate(&codecIterator))) {
-            // Skip codecs that aren't decoders
-            if (!av_codec_is_decoder(decoder)) {
-                continue;
-            }
-
-            // Skip decoders that don't match our decoding parameters
-            if (!isDecoderMatchForParams(decoder, params)) {
-                continue;
-            }
-
-            // Skip hardware decoders
-            //
-            // NB: We can't skip hwaccel decoders here because they can be both
-            // hardware and software depending on whether an hwaccel is supplied.
-            // Instead, we tell tryInitializeRendererForUnknownDecoder() not to
-            // try hwaccel for this decoder.
-            if (getAVCodecCapabilities(decoder) & AV_CODEC_CAP_HARDWARE) {
-                continue;
-            }
-
-            // Try this decoder without hwaccel
-            if (tryInitializeRendererForUnknownDecoder(decoder, params, false)) {
-                return true;
-            }
-        }
-    }
-
+    // No hardware decoder found - fail directly instead of falling back to software
     SDL_LogError(SDL_LOG_CATEGORY_APPLICATION,
-                 "Unable to find working decoder for format: %x",
+                 "No hardware decoder available for format: %x (software fallback disabled)",
                  params->videoFormat);
     return false;
 }
