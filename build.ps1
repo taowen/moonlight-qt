@@ -1,7 +1,6 @@
 param(
-    [Parameter(Mandatory=$true)]
     [ValidateSet("debug", "release", "signed-release")]
-    [string]$BuildConfig
+    [string]$BuildConfig = "release"
 )
 
 # PowerShell equivalent of build.bat and build-arch.bat combined
@@ -50,26 +49,19 @@ switch ($BuildConfig) {
 }
 
 # Locate qmake
-$QmakeCmd = $null
+$QmakeCmd = "qmake.exe"
 $QmakePath = $null
 
 try {
-    $QmakePath = Get-Command qmake.bat -ErrorAction SilentlyContinue
+    $QmakePath = Get-Command qmake.exe -ErrorAction SilentlyContinue
     if ($QmakePath) {
-        $QmakeCmd = "qmake.bat"
-        Write-Host "Found qmake.bat"
+        Write-Host "Found qmake.exe at: $($QmakePath.Source)"
     } else {
-        $QmakePath = Get-Command qmake.exe -ErrorAction SilentlyContinue
-        if ($QmakePath) {
-            $QmakeCmd = "qmake.exe"
-            Write-Host "Found qmake.exe"
-        } else {
-            Write-Error "Unable to find QMake. Did you add Qt bins to your PATH?"
-            exit 1
-        }
+        Write-Error "Unable to find qmake.exe. Did you add Qt bins to your PATH?"
+        exit 1
     }
 } catch {
-    Write-Error "Unable to find QMake. Did you add Qt bins to your PATH?"
+    Write-Error "Unable to find qmake.exe. Did you add Qt bins to your PATH?"
     exit 1
 }
 
@@ -166,11 +158,7 @@ New-Item -ItemType Directory -Path $SymbolsFolder -Force | Out-Null
 Write-Host "Configuring the project"
 Push-Location $BuildFolder
 try {
-    if ($QmakeCmd -eq "qmake.bat") {
-        cmd /c "qmake.bat `"$SourceRoot\moonlight-qt.pro`""
-    } else {
-        & qmake.exe "$SourceRoot\moonlight-qt.pro"
-    }
+    & qmake.exe "$SourceRoot\moonlight-qt.pro"
     if ($LASTEXITCODE -ne 0) {
         Write-Error "QMake configuration failed"
         exit $LASTEXITCODE
