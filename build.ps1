@@ -8,13 +8,28 @@ param(
 
 $ErrorActionPreference = "Stop"
 
+function Initialize-BuildEnvironment {
+    param(
+        [string]$QtBinPath = "C:\Qt\6.7.3\msvc2019_64\bin"
+    )
+    
+    Write-Host "`n=== Initializing Build Environment ==="
+    
+    # Remove all Git paths from PATH to avoid conflicts
+    $env:OLDPATH = $env:PATH
+    $CleanPath = ($env:PATH -split ';' | Where-Object { $_ -notmatch 'Git' }) -join ';'
+    $env:PATH = "$CleanPath;$QtBinPath"
+    $env:COMSPEC = "$env:SystemRoot\system32\cmd.exe"
+    
+    Write-Host "Environment initialized successfully"
+}
+
 # Initialize Visual Studio environment
 $VSPath = "C:\Program Files\Microsoft Visual Studio\2022\Community\VC\Auxiliary\Build\vcvarsall.bat"
 $WorkspaceRoot = "c:\games\moonlight-qt"
 
-# Set up environment variables
-$env:OLDPATH = $env:PATH
-$env:PATH = "$env:OLDPATH;C:\Qt\6.7.3\msvc2019_64\bin"
+# Initialize build environment with clean PATH
+Initialize-BuildEnvironment -QtBinPath "C:\Qt\6.7.3\msvc2019_64\bin"
 
 # Change to workspace directory
 Set-Location $WorkspaceRoot
