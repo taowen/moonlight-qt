@@ -1,0 +1,85 @@
+MOONLIGHT QT 核心文件布局
+===============================
+
+## 根目录文件
+moonlight-qt.pro         - 主项目文件
+globaldefs.pri          - 全局定义
+build.ps1               - PowerShell 构建脚本
+build.bat               - 批处理构建脚本
+appveyor.yml            - CI 配置
+
+## 应用程序核心
+app/
+├── main.cpp            - 应用程序入口点
+├── app.pro             - 应用模块项目文件
+├── backend/            - 后端服务
+│   ├── computermanager.cpp/h     - 计算机管理
+│   ├── nvhttp.cpp/h              - NVIDIA HTTP 通信
+│   ├── nvcomputer.cpp/h          - NVIDIA 计算机抽象
+│   └── nvapp.cpp/h               - NVIDIA 应用管理
+├── gui/                - 用户界面
+│   ├── main.qml        - 主界面 QML
+│   ├── AppView.qml     - 应用视图
+│   ├── PcView.qml      - PC 视图
+│   └── SettingsView.qml - 设置视图
+├── streaming/          - 流媒体核心
+│   ├── session.cpp/h   - 会话管理
+│   ├── audio/          - 音频处理
+│   ├── video/          - 视频处理
+│   └── input/          - 输入处理
+└── settings/           - 设置管理
+    └── streamingpreferences.cpp/h - 流媒体偏好设置
+
+## 核心库
+moonlight-common-c/     - Moonlight 核心 C 库
+├── moonlight-common-c.pro - 库项目文件
+└── moonlight-common-c/
+    ├── src/            - 核心源码
+    ├── enet/           - ENet 网络库
+    └── reedsolomon/    - Reed-Solomon 纠错码
+
+## 音频库
+soundio/                - SoundIO 音频库
+├── soundio.pro         - 音频库项目文件
+└── libsoundio/         - SoundIO 源码
+
+## mDNS 网络发现
+qmdnsengine/            - mDNS 引擎
+├── qmdnsengine.pro     - mDNS 项目文件
+└── qmdnsengine/        - mDNS 源码
+
+## H.264 比特流
+h264bitstream/          - H.264 比特流解析
+├── h264bitstream.pro   - H.264 项目文件
+└── h264bitstream/      - H.264 源码
+
+## 反 Hook 保护
+AntiHooking/            - 反 Hook 保护模块
+├── AntiHooking.pro     - 反 Hook 项目文件
+└── antihookingprotection.cpp/h - 反 Hook 实现
+
+## 外部依赖库
+libs/
+├── windows/            - Windows 平台库
+│   ├── include/        - 头文件
+│   └── lib/            - 库文件
+└── mac/                - macOS 平台库
+
+## 构建输出
+build/                  - 构建输出目录
+└── build-x64-release/  - x64 Release 构建
+
+## 脚本和工具
+scripts/                - 构建和部署脚本
+├── build-*.sh/bat      - 各平台构建脚本
+├── generate-*.sh       - 生成脚本
+└── jom.exe             - 并行构建工具
+
+## 安装包
+wix/                    - Windows Installer XML 配置
+├── Moonlight.sln       - 安装包解决方案
+└── MoonlightSetup/     - 安装包项目
+
+## 配置和测试
+config.tests/           - 配置测试
+tests/                  - 单元测试
