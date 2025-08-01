@@ -80,6 +80,5 @@ wix/                    - Windows Installer XML 配置
 ├── Moonlight.sln       - 安装包解决方案
 └── MoonlightSetup/     - 安装包项目
 
-## 配置和测试
-config.tests/           - 配置测试
-tests/                  - 单元测试
+## 测试
+tests/                  - 集成测试
