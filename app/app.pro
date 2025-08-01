@@ -178,7 +178,7 @@ SOURCES += \
     cli/pair.cpp \
 
 test {
-    SOURCES += ../test-main.cpp
+    SOURCES += ../tests/test-main.cpp
 } else {
     SOURCES += main.cpp
 }
