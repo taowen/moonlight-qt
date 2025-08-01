@@ -1,11 +1,15 @@
 QT += core quick network quickcontrols2 svg
 CONFIG += c++11
 
-unix:!macx {
-    TARGET = moonlight
+test {
+    TARGET = MoonlightTest
 } else {
-    # On macOS, this is the name displayed in the global menu bar
-    TARGET = Moonlight
+    unix:!macx {
+        TARGET = moonlight
+    } else {
+        # On macOS, this is the name displayed in the global menu bar
+        TARGET = Moonlight
+    }
 }
 
 include(../globaldefs.pri)
@@ -172,7 +176,14 @@ SOURCES += \
     backend/nvaddress.cpp \
     backend/nvapp.cpp \
     cli/pair.cpp \
-    main.cpp \
+
+test {
+    SOURCES += ../test-main.cpp
+} else {
+    SOURCES += main.cpp
+}
+
+SOURCES += \
     backend/connectscreenserver.cpp \
     backend/computerseeker.cpp \
     backend/identitymanager.cpp \
