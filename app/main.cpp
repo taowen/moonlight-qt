@@ -13,7 +13,7 @@
 #include <QTemporaryFile>
 #include <QRegularExpression>
 #include <iostream>
-// #include "tests/integration_test.h"
+#include "tests/integration_test.h"
 
 // Don't let SDL hook our main function, since Qt is already
 // doing the same thing. This needs to be before any headers
@@ -789,11 +789,17 @@ int main(int argc, char *argv[])
             }
 #endif
             // Run integration tests
-            qInfo() << "Integration tests executed successfully!";
-            std::cout << "Test completed!" << std::endl;
+            int testResult = runIntegrationTests();
+            if (testResult == 0) {
+                qInfo() << "Integration tests executed successfully!";
+                std::cout << "Test completed!" << std::endl;
+            } else {
+                qCritical() << "Integration tests failed with code:" << testResult;
+                std::cout << "Test failed!" << std::endl;
+            }
             fflush(stdout);
             fflush(stderr);
-            return 0;
+            return testResult;
         }
     }
 

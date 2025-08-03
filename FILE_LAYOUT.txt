@@ -79,6 +79,3 @@ scripts/                - 构建和部署脚本
 wix/                    - Windows Installer XML 配置
 ├── Moonlight.sln       - 安装包解决方案
 └── MoonlightSetup/     - 安装包项目
-
-## 测试
-tests/                  - 集成测试
