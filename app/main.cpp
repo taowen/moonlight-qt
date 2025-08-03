@@ -789,7 +789,6 @@ int main(int argc, char *argv[])
             }
 #endif
             // Run integration tests
-            std::cout << "!!!!" << std::endl;
             qInfo() << "Integration tests executed successfully!";
             std::cout << "Test completed!" << std::endl;
             fflush(stdout);
