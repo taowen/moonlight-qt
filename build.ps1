@@ -1,10 +1,11 @@
 param(
     [ValidateSet("debug", "release", "signed-release")]
-    [string]$BuildConfig = "release"
+    [string]$BuildConfig = "release",
+    [switch]$Clean = $false
 )
 
-# PowerShell equivalent of build.bat and build-arch.bat combined
-# Usage: .\build.ps1 -BuildConfig release
+# PowerShell build script with incremental build support
+# Usage: .\build.ps1 -BuildConfig release [-Clean]
 
 $ErrorActionPreference = "Stop"
 
@@ -13,7 +14,7 @@ function Initialize-BuildEnvironment {
         [string]$QtBinPath = "C:\Qt\6.7.3\msvc2019_64\bin"
     )
     
-    Write-Host "`n=== Initializing Build Environment ==="
+    Write-Host "`n=== Initializing Build Environment ===" -ForegroundColor Cyan
     
     # Remove all Git paths from PATH to avoid conflicts
     $env:OLDPATH = $env:PATH
@@ -21,7 +22,39 @@ function Initialize-BuildEnvironment {
     $env:PATH = "$CleanPath;$QtBinPath"
     $env:COMSPEC = "$env:SystemRoot\system32\cmd.exe"
     
-    Write-Host "Environment initialized successfully"
+    Write-Host "Environment initialized successfully" -ForegroundColor Green
+}
+
+function Test-FileNewer {
+    param(
+        [string]$SourceFile,
+        [string]$TargetFile
+    )
+    
+    if (-not (Test-Path $TargetFile)) {
+        return $true
+    }
+    
+    if (-not (Test-Path $SourceFile)) {
+        return $false
+    }
+    
+    return (Get-Item $SourceFile).LastWriteTime -gt (Get-Item $TargetFile).LastWriteTime
+}
+
+function Copy-IfNewer {
+    param(
+        [string]$Source,
+        [string]$Destination,
+        [switch]$Clean = $false
+    )
+    
+    if ($Clean -or (Test-FileNewer -SourceFile $Source -TargetFile $Destination)) {
+        Write-Host "Updating: $(Split-Path -Leaf $Destination)" -ForegroundColor Yellow
+        Copy-Item $Source $Destination -Force
+        return $true
+    }
+    return $false
 }
 
 # Initialize Visual Studio environment
@@ -34,7 +67,11 @@ Initialize-BuildEnvironment -QtBinPath "C:\Qt\6.7.3\msvc2019_64\bin"
 # Change to workspace directory
 Set-Location $WorkspaceRoot
 
-Write-Host "Building Moonlight Qt with configuration: $BuildConfig"
+if ($Clean) {
+    Write-Host "Building Moonlight Qt with configuration: $BuildConfig (clean build)" -ForegroundColor Cyan
+} else {
+    Write-Host "Building Moonlight Qt with configuration: $BuildConfig (incremental)" -ForegroundColor Cyan
+}
 
 # Convert build config to lowercase and set additional variables
 $BuildConfigLower = $BuildConfig.ToLower()
@@ -158,31 +195,50 @@ cmd /c "`"$VCVarsScript`" $VcArch && set" | ForEach-Object {
 # Find VC redistributable DLLs
 $VcRedistDllPath = & $VSWhere -latest -find "VC\Redist\MSVC\*\$Arch\Microsoft.VC*.CRT" | Select-Object -First 1
 
-Write-Host "Cleaning output directories"
-if (Test-Path $DeployFolder) { Remove-Item $DeployFolder -Recurse -Force }
-if (Test-Path $BuildFolder) { Remove-Item $BuildFolder -Recurse -Force }
-if (Test-Path $InstallerFolder) { Remove-Item $InstallerFolder -Recurse -Force }
-if (Test-Path $SymbolsFolder) { Remove-Item $SymbolsFolder -Recurse -Force }
+# Create output directories if they don't exist
+if (-not (Test-Path $BuildRoot)) { New-Item -ItemType Directory -Path $BuildRoot -Force | Out-Null }
+if (-not (Test-Path $DeployFolder)) { New-Item -ItemType Directory -Path $DeployFolder -Force | Out-Null }
+if (-not (Test-Path $BuildFolder)) { New-Item -ItemType Directory -Path $BuildFolder -Force | Out-Null }
+if (-not (Test-Path $InstallerFolder)) { New-Item -ItemType Directory -Path $InstallerFolder -Force | Out-Null }
+if (-not (Test-Path $SymbolsFolder)) { New-Item -ItemType Directory -Path $SymbolsFolder -Force | Out-Null }
 
-New-Item -ItemType Directory -Path $BuildRoot -Force | Out-Null
-New-Item -ItemType Directory -Path $DeployFolder -Force | Out-Null
-New-Item -ItemType Directory -Path $BuildFolder -Force | Out-Null
-New-Item -ItemType Directory -Path $InstallerFolder -Force | Out-Null
-New-Item -ItemType Directory -Path $SymbolsFolder -Force | Out-Null
-
-Write-Host "Configuring the project"
-Push-Location $BuildFolder
-try {
-    & qmake.exe "$SourceRoot\moonlight-qt.pro"
-    if ($LASTEXITCODE -ne 0) {
-        Write-Error "QMake configuration failed"
-        exit $LASTEXITCODE
-    }
-} finally {
-    Pop-Location
+# Clean directories only if requested
+if ($Clean) {
+    Write-Host "Cleaning output directories (--Clean specified)" -ForegroundColor Yellow
+    if (Test-Path $DeployFolder) { Remove-Item $DeployFolder -Recurse -Force }
+    if (Test-Path $BuildFolder) { Remove-Item $BuildFolder -Recurse -Force }
+    if (Test-Path $InstallerFolder) { Remove-Item $InstallerFolder -Recurse -Force }
+    if (Test-Path $SymbolsFolder) { Remove-Item $SymbolsFolder -Recurse -Force }
+    
+    New-Item -ItemType Directory -Path $DeployFolder -Force | Out-Null
+    New-Item -ItemType Directory -Path $BuildFolder -Force | Out-Null
+    New-Item -ItemType Directory -Path $InstallerFolder -Force | Out-Null
+    New-Item -ItemType Directory -Path $SymbolsFolder -Force | Out-Null
 }
 
-Write-Host "Compiling Moonlight in $BuildConfigLower configuration"
+# Check if project needs reconfiguration
+$MakefileExists = Test-Path "$BuildFolder\Makefile"
+$ProFileTime = (Get-Item "$SourceRoot\moonlight-qt.pro").LastWriteTime
+$MakefileTime = if ($MakefileExists) { (Get-Item "$BuildFolder\Makefile").LastWriteTime } else { [DateTime]::MinValue }
+$NeedsReconfigure = (-not $MakefileExists) -or ($ProFileTime -gt $MakefileTime) -or $Clean
+
+if ($NeedsReconfigure) {
+    Write-Host "Configuring the project" -ForegroundColor Cyan
+    Push-Location $BuildFolder
+    try {
+        & qmake.exe "$SourceRoot\moonlight-qt.pro"
+        if ($LASTEXITCODE -ne 0) {
+            Write-Error "QMake configuration failed"
+            exit $LASTEXITCODE
+        }
+    } finally {
+        Pop-Location
+    }
+} else {
+    Write-Host "Project configuration is up to date" -ForegroundColor Green
+}
+
+Write-Host "Compiling Moonlight in $BuildConfigLower configuration" -ForegroundColor Cyan
 Push-Location $BuildFolder
 try {
     & "$SourceRoot\scripts\jom.exe" $BuildConfigLower
@@ -194,14 +250,32 @@ try {
     Pop-Location
 }
 
-Write-Host "Saving PDBs"
-Get-ChildItem -Path $BuildFolder -Recurse -Filter "*.pdb" | ForEach-Object {
-    Copy-Item $_.FullName $SymbolsFolder
+# Check if main executable was built
+$MainExePath = "$BuildFolder\app\$BuildConfigLower\Moonlight.exe"
+if (-not (Test-Path $MainExePath)) {
+    Write-Error "Main executable not found: $MainExePath"
+    exit 1
 }
-Copy-Item "$SourceRoot\libs\windows\lib\$Arch\*.pdb" $SymbolsFolder
+
+Write-Host "Saving PDBs" -ForegroundColor Cyan
+$PdbUpdated = $false
+Get-ChildItem -Path $BuildFolder -Recurse -Filter "*.pdb" | ForEach-Object {
+    $TargetPdb = Join-Path $SymbolsFolder $_.Name
+    if (Copy-IfNewer -Source $_.FullName -Destination $TargetPdb -Clean:$Clean) {
+        $PdbUpdated = $true
+    }
+}
+
+# Copy external PDBs
+Get-ChildItem -Path "$SourceRoot\libs\windows\lib\$Arch\*.pdb" | ForEach-Object {
+    $TargetPdb = Join-Path $SymbolsFolder $_.Name
+    if (Copy-IfNewer -Source $_.FullName -Destination $TargetPdb -Clean:$Clean) {
+        $PdbUpdated = $true
+    }
+}
 
 # Handle symbol store publishing
-if ($env:ML_SYMBOL_STORE) {
+if ($env:ML_SYMBOL_STORE -and $PdbUpdated) {
     Write-Host "Publishing PDBs to symbol store: $env:ML_SYMBOL_STORE"
     & symstore add /f "$SymbolsFolder\*.pdb" /s $env:ML_SYMBOL_STORE /t Moonlight
     if ($LASTEXITCODE -ne 0) {
@@ -213,7 +287,7 @@ if ($env:ML_SYMBOL_STORE) {
     exit 1
 }
 
-if ($env:ML_SYMBOL_ARCHIVE) {
+if ($env:ML_SYMBOL_ARCHIVE -and $PdbUpdated) {
     Write-Host "Copying PDB ZIP to symbol archive: $env:ML_SYMBOL_ARCHIVE"
     Copy-Item "$SymbolsFolder\MoonlightDebuggingSymbols-$Arch-$Version.zip" $env:ML_SYMBOL_ARCHIVE
 } elseif ($MustDeploySymbols) {
@@ -221,57 +295,102 @@ if ($env:ML_SYMBOL_ARCHIVE) {
     exit 1
 }
 
-Write-Host "Copying DLL dependencies"
-Copy-Item "$SourceRoot\libs\windows\lib\$Arch\*.dll" $DeployFolder
+# Incremental dependency copying
+$DependenciesUpdated = $false
 
-Write-Host "Copying AntiHooking.dll"
-Copy-Item "$BuildFolder\AntiHooking\$BuildConfigLower\AntiHooking.dll" $DeployFolder
+Write-Host "Checking DLL dependencies" -ForegroundColor Cyan
+Get-ChildItem -Path "$SourceRoot\libs\windows\lib\$Arch\*.dll" | ForEach-Object {
+    $TargetDll = Join-Path $DeployFolder $_.Name
+    if (Copy-IfNewer -Source $_.FullName -Destination $TargetDll -Clean:$Clean) {
+        $DependenciesUpdated = $true
+    }
+}
 
-Write-Host "Copying GC mapping list"
-Copy-Item "$SourceRoot\app\SDL_GameControllerDB\gamecontrollerdb.txt" $DeployFolder
+# Check AntiHooking.dll
+$AntiHookingSource = "$BuildFolder\AntiHooking\$BuildConfigLower\AntiHooking.dll"
+$AntiHookingTarget = "$DeployFolder\AntiHooking.dll"
+if (Test-Path $AntiHookingSource) {
+    if (Copy-IfNewer -Source $AntiHookingSource -Destination $AntiHookingTarget -Clean:$Clean) {
+        $DependenciesUpdated = $true
+    }
+}
+
+# Check GC mapping list
+$GcMapSource = "$SourceRoot\app\SDL_GameControllerDB\gamecontrollerdb.txt"
+$GcMapTarget = "$DeployFolder\gamecontrollerdb.txt"
+if (Copy-IfNewer -Source $GcMapSource -Destination $GcMapTarget -Clean:$Clean) {
+    $DependenciesUpdated = $true
+}
 
 # Handle Qt configuration
-$WinDeployQtArgs = @()
+$QtConfigUpdated = $false
 if ($QtPath -match "\\5\.") {
-    Write-Host "Copying qt.conf for Qt 5"
-    Copy-Item "$SourceRoot\app\qt_qt5.conf" "$DeployFolder\qt.conf"
-    $WinDeployQtArgs = @("--no-qmltooling", "--no-virtualkeyboard")
-} else {
-    # Qt 6.5+
-    $WinDeployQtArgs = @(
-        "--no-system-d3d-compiler",
-        "--no-system-dxc-compiler", 
-        "--skip-plugin-types", "qmltooling,generic",
-        "--no-ffmpeg",
-        "--no-quickcontrols2fusion",
-        "--no-quickcontrols2imagine", 
-        "--no-quickcontrols2universal",
-        "--no-quickcontrols2fusionstyleimpl",
-        "--no-quickcontrols2imaginestyleimpl",
-        "--no-quickcontrols2universalstyleimpl",
-        "--no-quickcontrols2windowsstyleimpl"
-    )
+    $QtConfSource = "$SourceRoot\app\qt_qt5.conf"
+    $QtConfTarget = "$DeployFolder\qt.conf"
+    if (Copy-IfNewer -Source $QtConfSource -Destination $QtConfTarget -Clean:$Clean) {
+        $QtConfigUpdated = $true
+    }
 }
 
-Write-Host "Deploying Qt dependencies"
-$WinDeployQtAllArgs = @(
-    "--dir", $DeployFolder,
-    "--$BuildConfigLower",
-    "--qmldir", "$SourceRoot\app\gui",
-    "--no-opengl-sw",
-    "--no-compiler-runtime",
-    "--no-sql"
-) + $WinDeployQtArgs + @("$BuildFolder\app\$BuildConfigLower\Moonlight.exe")
+# Check if we need to run windeployqt
+$MainExeTarget = "$DeployFolder\Moonlight.exe"
 
-if ($WinDeployQtCmd -match "^.*\\windeployqt\.exe") {
-    & $WinDeployQtCmd.Split()[0] @WinDeployQtAllArgs
+# Check if Qt translation files exist (sample check for common translations)
+$QtTranslationsExist = (Test-Path "$DeployFolder\translations\qt_en.qm") -and 
+                       (Test-Path "$DeployFolder\translations\qt_zh_CN.qm") -and
+                       (Test-Path "$DeployFolder\translations\qt_de.qm")
+
+$NeedsQtDeploy = $Clean -or $QtConfigUpdated -or 
+                 (Test-FileNewer -SourceFile $MainExePath -TargetFile $MainExeTarget) -or 
+                 (-not (Test-Path "$DeployFolder\Qt6Core.dll")) -or
+                 (-not (Test-Path "$DeployFolder\platforms")) -or
+                 (-not $QtTranslationsExist)
+
+if ($NeedsQtDeploy) {
+    Write-Host "Deploying Qt dependencies" -ForegroundColor Cyan
+    
+    # Prepare windeployqt arguments
+    $WinDeployQtArgs = @()
+    if ($QtPath -match "\\5\.") {
+        $WinDeployQtArgs = @("--no-qmltooling", "--no-virtualkeyboard")
+    } else {
+        # Qt 6.5+
+        $WinDeployQtArgs = @(
+            "--no-system-d3d-compiler",
+            "--no-system-dxc-compiler", 
+            "--skip-plugin-types", "qmltooling,generic",
+            "--no-ffmpeg",
+            "--no-quickcontrols2fusion",
+            "--no-quickcontrols2imagine", 
+            "--no-quickcontrols2universal",
+            "--no-quickcontrols2fusionstyleimpl",
+            "--no-quickcontrols2imaginestyleimpl",
+            "--no-quickcontrols2universalstyleimpl",
+            "--no-quickcontrols2windowsstyleimpl"
+        )
+    }
+
+    $WinDeployQtAllArgs = @(
+        "--dir", $DeployFolder,
+        "--$BuildConfigLower",
+        "--qmldir", "$SourceRoot\app\gui",
+        "--no-opengl-sw",
+        "--no-compiler-runtime",
+        "--no-sql"
+    ) + $WinDeployQtArgs + @($MainExePath)
+
+    if ($WinDeployQtCmd -match "^.*\\windeployqt\.exe") {
+        & $WinDeployQtCmd.Split()[0] @WinDeployQtAllArgs
+    } else {
+        & windeployqt.exe @WinDeployQtAllArgs
+    }
+
+    if ($LASTEXITCODE -ne 0) {
+        Write-Error "Qt deployment failed"
+        exit $LASTEXITCODE
+    }
 } else {
-    & windeployqt.exe @WinDeployQtAllArgs
-}
-
-if ($LASTEXITCODE -ne 0) {
-    Write-Error "Qt deployment failed"
-    exit $LASTEXITCODE
+    Write-Host "Qt dependencies are up to date (skipping translation file regeneration)" -ForegroundColor Green
 }
 
 Write-Host "Deleting unused styles"
@@ -294,12 +413,14 @@ foreach ($StyleDir in $StyleDirs) {
     }
 }
 
-Write-Host "Copying application binary to deployment directory"
-Copy-Item "$BuildFolder\app\$BuildConfigLower\Moonlight.exe" $DeployFolder
+# Copy main executable if newer
+if (Copy-IfNewer -Source $MainExePath -Destination $MainExeTarget -Clean:$Clean) {
+    Write-Host "Updated main executable" -ForegroundColor Yellow
+}
 
 if ($Sign) {
-    Write-Host "Signing deployed binaries"
-    $FilesToSign = @("$BuildFolder\app\$BuildConfigLower\Moonlight.exe")
+    Write-Host "Signing deployed binaries" -ForegroundColor Cyan
+    $FilesToSign = @($MainExePath)
     $FilesToSign += Get-ChildItem -Path $DeployFolder -Recurse -Include "*.dll", "*.exe" | ForEach-Object { $_.FullName }
     
     & signtool $SignToolParams.Split() $FilesToSign
@@ -309,4 +430,7 @@ if ($Sign) {
     }
 }
 
-Write-Host "build successful $BuildFolder\app\$BuildConfigLower\Moonlight.exe" -ForegroundColor Green
+$EndTime = Get-Date
+Write-Host "`nBuild completed successfully!" -ForegroundColor Green
+Write-Host "Executable: $MainExeTarget" -ForegroundColor Green
+Write-Host "Deploy folder: $DeployFolder" -ForegroundColor Green

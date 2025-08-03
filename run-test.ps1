@@ -13,8 +13,8 @@ Set-Location $WorkspaceRoot
 
 Write-Host "Building Moonlight Qt for testing with configuration: $BuildConfig"
 
-# Call build.ps1 to do the full build and deployment
-& ".\build-incremental.ps1" -BuildConfig $BuildConfig
+# Call build.ps1 to do the incremental build and deployment
+& ".\build.ps1" -BuildConfig $BuildConfig
 if ($LASTEXITCODE -ne 0) {
     Write-Error "Build failed"
     exit $LASTEXITCODE
