@@ -568,6 +568,9 @@ win32 {
     QMAKE_TARGET_DESCRIPTION = Moonlight Game Streaming Client
     QMAKE_TARGET_PRODUCT = Moonlight
 
+    # Enable console output for command line operations
+    CONFIG += console
+
     CONFIG -= embed_manifest_exe
     QMAKE_LFLAGS += /MANIFEST:embed /MANIFESTINPUT:$${PWD}/Moonlight.exe.manifest
 }

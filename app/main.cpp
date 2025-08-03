@@ -12,6 +12,7 @@
 #include <QElapsedTimer>
 #include <QTemporaryFile>
 #include <QRegularExpression>
+#include <iostream>
 // #include "tests/integration_test.h"
 
 // Don't let SDL hook our main function, since Qt is already
@@ -778,8 +779,21 @@ int main(int argc, char *argv[])
         }
     case GlobalCommandLineParser::TestRequested:
         {
+#ifdef Q_OS_WIN32
+            // Attach to parent console for test output
+            if (AttachConsole(ATTACH_PARENT_PROCESS)) {
+                freopen("CONOUT$", "w", stdout);
+                freopen("CONOUT$", "w", stderr);
+                setvbuf(stdout, NULL, _IONBF, 0);
+                setvbuf(stderr, NULL, _IONBF, 0);
+            }
+#endif
             // Run integration tests
+            std::cout << "!!!!" << std::endl;
             qInfo() << "Integration tests executed successfully!";
+            std::cout << "Test completed!" << std::endl;
+            fflush(stdout);
+            fflush(stderr);
             return 0;
         }
     }
