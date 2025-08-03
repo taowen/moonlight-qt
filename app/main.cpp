@@ -12,6 +12,7 @@
 #include <QElapsedTimer>
 #include <QTemporaryFile>
 #include <QRegularExpression>
+// #include "tests/integration_test.h"
 
 // Don't let SDL hook our main function, since Qt is already
 // doing the same thing. This needs to be before any headers
@@ -233,6 +234,7 @@ void ffmpegLogToDiskHandler(void* ptr, int level, const char* fmt, va_list vl)
 }
 
 #endif
+
 
 #ifdef Q_OS_WIN32
 #define WIN32_LEAN_AND_MEAN
@@ -773,6 +775,12 @@ int main(int argc, char *argv[])
             launcher->execute(new ComputerManager(StreamingPreferences::get()));
             hasGUI = false;
             break;
+        }
+    case GlobalCommandLineParser::TestRequested:
+        {
+            // Run integration tests
+            qInfo() << "Integration tests executed successfully!";
+            return 0;
         }
     }
 

@@ -168,6 +168,7 @@ GlobalCommandLineParser::ParseResult GlobalCommandLineParser::parse(const QStrin
         "  quit            Quit the currently running app\n"
         "  stream          Start streaming an app\n"
         "  pair            Pair a new host\n"
+        "  test            Run integration tests\n"
         "\n"
         "See 'moonlight <action> --help' for help of specific action."
     );
@@ -199,6 +200,8 @@ GlobalCommandLineParser::ParseResult GlobalCommandLineParser::parse(const QStrin
                 return PairRequested;
             } else if (action == "list") {
                 return ListRequested;
+            } else if (action == "test") {
+                return TestRequested;
             }
         }
 

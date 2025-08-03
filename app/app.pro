@@ -177,11 +177,14 @@ SOURCES += \
     backend/nvapp.cpp \
     cli/pair.cpp \
 
-test {
-    SOURCES += ../tests/test-main.cpp
-} else {
-    SOURCES += main.cpp
-}
+SOURCES += main.cpp
+
+# Always include test sources for linking
+SOURCES += \
+    ../tests/integration_test.cpp
+
+HEADERS += \
+    ../tests/integration_test.h
 
 SOURCES += \
     backend/connectscreenserver.cpp \
@@ -531,6 +534,9 @@ DEPENDPATH += $$PWD/../h264bitstream/h264bitstream
     INCLUDEPATH += $$PWD/../AntiHooking
     DEPENDPATH += $$PWD/../AntiHooking
 }
+
+# Add tests directory to include path
+INCLUDEPATH += $$PWD/..
 
 unix:!macx: {
     isEmpty(PREFIX) {
