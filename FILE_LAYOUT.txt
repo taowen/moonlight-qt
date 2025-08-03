@@ -12,23 +12,40 @@ appveyor.yml            - CI 配置
 app/
 ├── main.cpp            - 应用程序入口点
 ├── app.pro             - 应用模块项目文件
+├── path.h              - 路径工具类 (main.cpp 引用)
+├── utils.h             - 通用工具函数 (main.cpp 引用)
 ├── backend/            - 后端服务
 │   ├── computermanager.cpp/h     - 计算机管理
 │   ├── nvhttp.cpp/h              - NVIDIA HTTP 通信
 │   ├── nvcomputer.cpp/h          - NVIDIA 计算机抽象
-│   └── nvapp.cpp/h               - NVIDIA 应用管理
+│   ├── nvapp.cpp/h               - NVIDIA 应用管理
+│   ├── autoupdatechecker.cpp/h   - 自动更新检查器 (main.cpp 引用)
+│   ├── connectscreenserver.cpp/h - 连接屏幕服务器 (main.cpp 引用)
+│   └── systemproperties.cpp/h    - 系统属性 (main.cpp 引用)
+├── cli/                - 命令行接口 (main.cpp 引用)
+│   ├── commandlineparser.h       - 命令行解析器
+│   ├── listapps.h                - 列出应用程序
+│   ├── quitstream.h              - 退出流
+│   ├── startstream.h             - 开始流
+│   └── pair.h                    - 配对功能
 ├── gui/                - 用户界面
 │   ├── main.qml        - 主界面 QML
 │   ├── AppView.qml     - 应用视图
 │   ├── PcView.qml      - PC 视图
-│   └── SettingsView.qml - 设置视图
+│   ├── SettingsView.qml - 设置视图
+│   ├── computermodel.cpp/h       - 计算机模型 (main.cpp 引用)
+│   ├── appmodel.cpp/h            - 应用模型 (main.cpp 引用)
+│   └── sdlgamepadkeynavigation.cpp/h - SDL 游戏手柄按键导航 (main.cpp 引用)
 ├── streaming/          - 流媒体核心
 │   ├── session.cpp/h   - 会话管理
 │   ├── audio/          - 音频处理
 │   ├── video/          - 视频处理
+│   │   └── ffmpeg.h    - FFmpeg 视频处理 (main.cpp 引用)
 │   └── input/          - 输入处理
-└── settings/           - 设置管理
-    └── streamingpreferences.cpp/h - 流媒体偏好设置
+├── settings/           - 设置管理
+│   └── streamingpreferences.cpp/h - 流媒体偏好设置
+└── tests/              - 测试模块 (main.cpp 引用)
+    └── integration_test.h         - 集成测试
 
 ## 核心库
 moonlight-common-c/     - Moonlight 核心 C 库
