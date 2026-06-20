@@ -112,6 +112,8 @@ set BUILD_FOLDER=%BUILD_ROOT%\build-%ARCH%-%BUILD_CONFIG%
 set DEPLOY_FOLDER=%BUILD_ROOT%\deploy-%ARCH%-%BUILD_CONFIG%
 set INSTALLER_FOLDER=%BUILD_ROOT%\installer-%ARCH%-%BUILD_CONFIG%
 set SYMBOLS_FOLDER=%BUILD_ROOT%\symbols-%ARCH%-%BUILD_CONFIG%
+set ACER_SR_ENABLED=0
+set ACER_SR_BUILD_FOLDER=%BUILD_ROOT%\build-acer-sr-%ARCH%-%BUILD_CONFIG%
 
 rem Allow CI to override the version.txt with an environment variable
 if defined CI_VERSION (
@@ -139,6 +141,23 @@ for /f "usebackq delims=" %%i in (`%VSWHERE% -latest -property installationPath`
     call "%%i\VC\Auxiliary\Build\vcvarsall.bat" %VC_ARCH%
 )
 if !ERRORLEVEL! NEQ 0 goto Error
+
+if /I "%BUILD_CONFIG%"=="release" (
+    set CMAKE_CONFIG=Release
+) else (
+    set CMAKE_CONFIG=Debug
+)
+
+if /I "%ARCH%"=="x64" (
+    if exist "%SOURCE_ROOT%\app\acer_sr\CMakeLists.txt" (
+        echo Building Acer SR sidecar
+        set ACER_SR_ENABLED=1
+        cmake -S "%SOURCE_ROOT%\app\acer_sr" -B "%ACER_SR_BUILD_FOLDER%" -A x64
+        if !ERRORLEVEL! NEQ 0 goto Error
+        cmake --build "%ACER_SR_BUILD_FOLDER%" --config !CMAKE_CONFIG!
+        if !ERRORLEVEL! NEQ 0 goto Error
+    )
+)
 
 rem Find VC redistributable DLLs
 for /f "usebackq delims=" %%i in (`%VSWHERE% -latest -find VC\Redist\MSVC\*\%ARCH%\Microsoft.VC*.CRT`) do set VC_REDIST_DLL_PATH=%%i
@@ -178,6 +197,16 @@ for /r "%BUILD_FOLDER%" %%f in (*.pdb) do (
 )
 copy %SOURCE_ROOT%\libs\windows\lib\%ARCH%\*.pdb %SYMBOLS_FOLDER%
 if !ERRORLEVEL! NEQ 0 goto Error
+if "%ACER_SR_ENABLED%"=="1" (
+    if exist "%ACER_SR_BUILD_FOLDER%\!CMAKE_CONFIG!\moonlight-acer-sr.pdb" (
+        copy "%ACER_SR_BUILD_FOLDER%\!CMAKE_CONFIG!\moonlight-acer-sr.pdb" %SYMBOLS_FOLDER%
+        if !ERRORLEVEL! NEQ 0 goto Error
+    )
+    if exist "%ACER_SR_BUILD_FOLDER%\!CMAKE_CONFIG!\moonlight-acer-sr-smoke.pdb" (
+        copy "%ACER_SR_BUILD_FOLDER%\!CMAKE_CONFIG!\moonlight-acer-sr-smoke.pdb" %SYMBOLS_FOLDER%
+        if !ERRORLEVEL! NEQ 0 goto Error
+    )
+)
 7z a %SYMBOLS_FOLDER%\MoonlightDebuggingSymbols-%ARCH%-%VERSION%.zip %SYMBOLS_FOLDER%\*.pdb
 if !ERRORLEVEL! NEQ 0 goto Error
 
@@ -206,6 +235,53 @@ if "%ML_SYMBOL_ARCHIVE%" NEQ "" (
 echo Copying DLL dependencies
 copy %SOURCE_ROOT%\libs\windows\lib\%ARCH%\*.dll %DEPLOY_FOLDER%
 if !ERRORLEVEL! NEQ 0 goto Error
+
+if "%ACER_SR_ENABLED%"=="1" (
+    echo Copying Acer SR sidecar
+    copy "%ACER_SR_BUILD_FOLDER%\!CMAKE_CONFIG!\moonlight-acer-sr.dll" %DEPLOY_FOLDER%
+    if !ERRORLEVEL! NEQ 0 goto Error
+    copy "%ACER_SR_BUILD_FOLDER%\!CMAKE_CONFIG!\moonlight-acer-sr-smoke.exe" %DEPLOY_FOLDER%
+    if !ERRORLEVEL! NEQ 0 goto Error
+
+    if "!ACER_SR_RUNTIME_DIR!"=="" (
+        if exist "C:\Apps\scrcpy\dist-win64\SimulatedRealityCore.dll" (
+            set ACER_SR_RUNTIME_DIR=C:\Apps\scrcpy\dist-win64
+        )
+    )
+    if "!ACER_SR_RUNTIME_DIR!"=="" (
+        if exist "C:\Program Files\Acer\SpatialLabs\Platform\bin\SimulatedRealityCore.dll" (
+            set ACER_SR_RUNTIME_DIR=C:\Program Files\Acer\SpatialLabs\Platform\bin
+        )
+    )
+    if not "!ACER_SR_RUNTIME_DIR!"=="" (
+        copy "!ACER_SR_RUNTIME_DIR!\SimulatedRealityCore.dll" %DEPLOY_FOLDER%
+        if !ERRORLEVEL! NEQ 0 goto Error
+        copy "!ACER_SR_RUNTIME_DIR!\SimulatedRealityDirectX.dll" %DEPLOY_FOLDER%
+        if !ERRORLEVEL! NEQ 0 goto Error
+        copy "!ACER_SR_RUNTIME_DIR!\SimulatedRealityDisplays.dll" %DEPLOY_FOLDER%
+        if !ERRORLEVEL! NEQ 0 goto Error
+    ) else (
+        echo Warning: Acer SR runtime DLLs were not found. Set ACER_SR_RUNTIME_DIR to the directory containing SimulatedReality*.dll.
+    )
+
+    if exist "%SystemRoot%\System32\D3DCompiler_47.dll" (
+        copy "%SystemRoot%\System32\D3DCompiler_47.dll" %DEPLOY_FOLDER%
+        if !ERRORLEVEL! NEQ 0 goto Error
+    )
+
+    if "!ORT_OPENVINO_RUNTIME_DIR!"=="" (
+        if exist "C:\Apps\build-tools\nuget-packages\Intel.ML.OnnxRuntime.OpenVino.1.24.1\runtimes\win-x64\native\onnxruntime.dll" (
+            set ORT_OPENVINO_RUNTIME_DIR=C:\Apps\build-tools\nuget-packages\Intel.ML.OnnxRuntime.OpenVino.1.24.1\runtimes\win-x64\native
+        )
+    )
+    if not "!ORT_OPENVINO_RUNTIME_DIR!"=="" (
+        echo Copying ONNX Runtime OpenVINO runtime
+        copy "!ORT_OPENVINO_RUNTIME_DIR!\*.dll" %DEPLOY_FOLDER%
+        if !ERRORLEVEL! NEQ 0 goto Error
+    ) else (
+        echo Warning: ONNX Runtime OpenVINO DLLs were not found. Set ORT_OPENVINO_RUNTIME_DIR to the NuGet native runtime directory.
+    )
+)
 
 echo Copying AntiHooking.dll
 copy %BUILD_FOLDER%\AntiHooking\%BUILD_CONFIG%\AntiHooking.dll %DEPLOY_FOLDER%

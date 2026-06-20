@@ -395,11 +395,13 @@ win32:!winrt {
     message(DXVA2 and D3D11VA renderers selected)
 
     SOURCES += \
+        streaming/video/acer_sr_sink.cpp \
         streaming/video/ffmpeg-renderers/dxva2.cpp \
         streaming/video/ffmpeg-renderers/d3d11va.cpp \
         streaming/video/ffmpeg-renderers/pacer/dxvsyncsource.cpp
 
     HEADERS += \
+        streaming/video/acer_sr_sink.h \
         streaming/video/ffmpeg-renderers/dxva2.h \
         streaming/video/ffmpeg-renderers/d3d11va.h \
         streaming/video/ffmpeg-renderers/pacer/dxvsyncsource.h

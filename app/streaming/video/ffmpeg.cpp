@@ -14,6 +14,7 @@ extern "C" {
 #include "ffmpeg-renderers/genhwaccel.h"
 
 #ifdef Q_OS_WIN32
+#include "acer_sr_sink.h"
 #include "ffmpeg-renderers/dxva2.h"
 #include "ffmpeg-renderers/d3d11va.h"
 #endif
@@ -225,6 +226,9 @@ FFmpegVideoDecoder::FFmpegVideoDecoder(bool testOnly)
       m_HwDecodeCfg(nullptr),
       m_BackendRenderer(nullptr),
       m_FrontendRenderer(nullptr),
+#ifdef Q_OS_WIN32
+      m_AcerSrSink(nullptr),
+#endif
       m_ConsecutiveFailedDecodes(0),
       m_Pacer(nullptr),
       m_BwTracker(10, 250),
@@ -277,6 +281,11 @@ void FFmpegVideoDecoder::reset()
 
     m_FramesIn = m_FramesOut = 0;
     m_FrameInfoQueue.clear();
+
+#ifdef Q_OS_WIN32
+    delete m_AcerSrSink;
+    m_AcerSrSink = nullptr;
+#endif
 
     delete m_Pacer;
     m_Pacer = nullptr;
@@ -713,6 +722,18 @@ bool FFmpegVideoDecoder::completeInitialization(const AVCodec* decoder, enum AVP
     }
 
     if (testMode != TestMode::TestFrameOnly) {
+#ifdef Q_OS_WIN32
+        if (AcerSrVideoSink::isEnabledByEnvironment()) {
+            m_AcerSrSink = new AcerSrVideoSink();
+            if (!m_AcerSrSink->open(m_VideoDecoderCtx)) {
+                SDL_LogWarn(SDL_LOG_CATEGORY_APPLICATION,
+                            "Acer SR sidecar requested but failed to initialize; continuing without it");
+                delete m_AcerSrSink;
+                m_AcerSrSink = nullptr;
+            }
+        }
+#endif
+
         if ((params->videoFormat & VIDEO_FORMAT_MASK_H264) &&
                 !(m_BackendRenderer->getDecoderCapabilities() & CAPABILITY_REFERENCE_FRAME_INVALIDATION_AVC)) {
             SDL_LogInfo(SDL_LOG_CATEGORY_APPLICATION,
@@ -2105,6 +2126,15 @@ int FFmpegVideoDecoder::submitDecodeUnit(PDECODE_UNIT du)
 
         return DR_NEED_IDR;
     }
+
+#ifdef Q_OS_WIN32
+    if (m_AcerSrSink && !m_AcerSrSink->pushPacket(m_Pkt)) {
+        SDL_LogWarn(SDL_LOG_CATEGORY_APPLICATION,
+                    "Acer SR sidecar stopped accepting frames; disabling it");
+        delete m_AcerSrSink;
+        m_AcerSrSink = nullptr;
+    }
+#endif
 
     m_FrameInfoQueue.enqueue(*du);
 

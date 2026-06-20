@@ -13,6 +13,10 @@ extern "C" {
 #include <libavcodec/avcodec.h>
 }
 
+#ifdef Q_OS_WIN32
+class AcerSrVideoSink;
+#endif
+
 class FFmpegVideoDecoder : public IVideoDecoder {
 public:
     FFmpegVideoDecoder(bool testOnly);
@@ -111,6 +115,9 @@ private:
     const AVCodecHWConfig* m_HwDecodeCfg;
     IFFmpegRenderer* m_BackendRenderer;
     IFFmpegRenderer* m_FrontendRenderer;
+#ifdef Q_OS_WIN32
+    AcerSrVideoSink* m_AcerSrSink;
+#endif
     int m_ConsecutiveFailedDecodes;
     Pacer* m_Pacer;
     BandwidthTracker m_BwTracker;

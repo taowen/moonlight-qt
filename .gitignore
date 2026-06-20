@@ -4,6 +4,8 @@
 **/.vs/
 .vscode/
 build/
+build-acer-sr/
 libs/
+aqtinstall.log
 config.tests/*/.qmake.stash
 config.tests/*/Makefile
