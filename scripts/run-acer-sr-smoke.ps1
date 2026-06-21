@@ -36,8 +36,7 @@ if (-not (Test-Path $sidecar)) {
 $env:MOONLIGHT_ACER_SR_MODE = $Mode
 $env:MOONLIGHT_ACER_SR_STRENGTH = $Strength
 if (-not $DepthModel) {
-    $arctrlRoot = Resolve-Path (Join-Path $sourceRoot "..")
-    $DepthModel = Join-Path $arctrlRoot "production\app\src\main\assets\distill_any_depth_small_588x336_nncf_int8.onnx"
+    $DepthModel = Join-Path $sourceRoot "models\distill_any_depth_small_588x336_nncf_int8.onnx"
 }
 $resolvedDepthModel = Resolve-Path $DepthModel
 if ([System.IO.Path]::GetFileName($resolvedDepthModel.Path) -ne "distill_any_depth_small_588x336_nncf_int8.onnx") {

@@ -20,10 +20,10 @@ Sunshine host -> Moonlight D3D11VA decode -> Acer SR sidecar -> Acer 3D display
 
 ## Repository Shape
 
-This is a recursive clone under the Arctrl workspace:
+This checkout is intended to be a standalone Moonlight fork:
 
 ```text
-C:\Apps\arctrl\moonlight-qt
+C:\Apps\moonlight-qt
 ```
 
 Important local additions:
@@ -69,7 +69,7 @@ The live path is intentionally narrow:
 - D3D11VA decoded texture only.
 - OpenVINO NPU only.
 - Required model:
-  `C:\Apps\arctrl\production\app\src\main\assets\distill_any_depth_small_588x336_nncf_int8.onnx`
+  `C:\Apps\moonlight-qt\models\distill_any_depth_small_588x336_nncf_int8.onnx`
 - Required model shape:
   `FLOAT 1x3x336x588 -> FLOAT 1x1x336x588`
 - No CPU/FP32/old-size model fallback.
@@ -119,21 +119,21 @@ display path is deliberately redesigned.
 Full Moonlight build uses the modified batch script:
 
 ```powershell
-cd C:\Apps\arctrl\moonlight-qt
+cd C:\Apps\moonlight-qt
 scripts\build-arch.bat release x64
 ```
 
 The Acer SR sidecar can be rebuilt directly:
 
 ```powershell
-cmake --build C:\Apps\arctrl\moonlight-qt\build\build-acer-sr-x64-release --config Release
+cmake --build C:\Apps\moonlight-qt\build\build-acer-sr-x64-release --config Release
 ```
 
 After rebuilding the sidecar manually, copy these files into the deploy folder:
 
 ```powershell
-Copy-Item C:\Apps\arctrl\moonlight-qt\build\build-acer-sr-x64-release\Release\moonlight-acer-sr.dll C:\Apps\arctrl\moonlight-qt\build\deploy-x64-release -Force
-Copy-Item C:\Apps\arctrl\moonlight-qt\build\build-acer-sr-x64-release\Release\moonlight-acer-sr-smoke.exe C:\Apps\arctrl\moonlight-qt\build\deploy-x64-release -Force
+Copy-Item C:\Apps\moonlight-qt\build\build-acer-sr-x64-release\Release\moonlight-acer-sr.dll C:\Apps\moonlight-qt\build\deploy-x64-release -Force
+Copy-Item C:\Apps\moonlight-qt\build\build-acer-sr-x64-release\Release\moonlight-acer-sr-smoke.exe C:\Apps\moonlight-qt\build\deploy-x64-release -Force
 ```
 
 The build expects local dependencies under `C:\Apps\build-tools`, including:
@@ -149,7 +149,7 @@ DLLs into the deploy directory when their local paths are available.
 Launch Moonlight with Acer SR enabled:
 
 ```powershell
-cd C:\Apps\arctrl\moonlight-qt
+cd C:\Apps\moonlight-qt
 .\scripts\run-acer-sr.ps1
 ```
 
@@ -182,7 +182,7 @@ $env:MOONLIGHT_ACER_SR_CONSOLE_LOG = "1"
 Run a live-depth sidecar smoke test without Sunshine:
 
 ```powershell
-cd C:\Apps\arctrl\moonlight-qt
+cd C:\Apps\moonlight-qt
 .\scripts\run-acer-sr-smoke.ps1 -Frames 60 -Fps 60 -Mode stereo -Strength weak
 ```
 
@@ -210,34 +210,28 @@ shader rendering, SR weaver, and present.
 
 ## Model Assets
 
-Model generation scripts live in the parent Arctrl workspace:
+The runtime model files live in this checkout:
 
 ```text
-C:\Apps\arctrl\scripts\export-distill-any-depth-small.py
-C:\Apps\arctrl\scripts\quantize-distill-any-depth-nncf.py
+C:\Apps\moonlight-qt\models
 ```
 
-The model files live in:
-
-```text
-C:\Apps\arctrl\production\app\src\main\assets
-```
-
-They are intentionally ignored by the parent repository. Do not commit ONNX,
-XML, or BIN model artifacts.
+They are intentionally ignored by git. Do not commit ONNX, XML, or BIN model
+artifacts. This Moonlight fork should be self-contained at runtime; copy or
+generate required models into `models/`.
 
 ## Git Notes
 
-This `moonlight-qt` directory is its own git checkout inside the Arctrl
-workspace. The parent Arctrl repository currently sees it as an untracked
-directory. Use the correct working directory when checking status or preparing
-commits.
+This `moonlight-qt` directory is its own git checkout. Use
+`C:\Apps\moonlight-qt` as the working directory when checking status or
+preparing commits.
 
 Do not commit build outputs from:
 
 ```text
 build/
 build-acer-sr/
+models/
 ```
 
 Do not commit local SDK/runtime DLLs, OpenVINO runtime files, generated models,

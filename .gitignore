@@ -6,6 +6,7 @@
 build/
 build-acer-sr/
 libs/
+models/
 aqtinstall.log
 config.tests/*/.qmake.stash
 config.tests/*/Makefile
